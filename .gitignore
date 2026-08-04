@@ -3,3 +3,20 @@
 .vscode/c_cpp_properties.json
 .vscode/launch.json
 .vscode/ipch
+
+# PlatformIO buildbestanden
+.pio/
+
+# VS Code
+.vscode/.browse.c_cpp.db*
+.vscode/c_cpp_properties.json
+.vscode/launch.json
+.vscode/ipch
+
+# OS-bestanden
+.DS_Store
+Thumbs.db
+
+# Tijdelijke bestanden
+*.tmp
+*.bak

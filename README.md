@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 
 This directory is intended for project header files.
 
@@ -35,3 +36,7 @@ Read more about using header files in official GCC documentation:
 * Computed Includes
 
 https://gcc.gnu.org/onlinedocs/cpp/Header-Files.html
+=======
+# BMX-Moto
+Automatic Manche and Moto Counter
+>>>>>>> 135899c19a44838a3e2c62c273e52ec95beb4eb4
