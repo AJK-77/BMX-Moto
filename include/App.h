@@ -6,6 +6,7 @@
 // ============================================================
 
 #include "Handheld/Managers/HeartbeatManager.h"
+#include "Handheld/Managers/RFManager.h"
 
 class App
 {
@@ -29,7 +30,7 @@ private:
     HeartbeatManager heartbeat;
     // EventManager     event;
     // StatusManager    status;
-    // RFManager        rf;
+    RFManager        rf;
     // BatteryManager   battery;
     // SettingsManager  settings;
 };

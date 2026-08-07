@@ -16,8 +16,10 @@ void HeartbeatManager::send()
 {
     Serial.println("Heartbeat");
     
-    // TODO:
-    // Build en verzend Heartbeat
+    if (rf != nullptr)
+{
+    rf->sendHeartbeat();
+}
 }
 
 void HeartbeatManager::update()
@@ -28,4 +30,8 @@ void HeartbeatManager::update()
 
         send();
     }
+}
+void HeartbeatManager::setRFManager(RFManager* manager)
+{
+    rf = manager;
 }

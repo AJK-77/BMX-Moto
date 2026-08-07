@@ -2,22 +2,20 @@
 
 // ============================================================
 // BMX-Moto
-// Heartbeat Manager
+// RF Manager
 // ============================================================
 
-#include "Handheld/Managers/RFManager.h"
-
-class HeartbeatManager
+class RFManager
 {
 public:
-    HeartbeatManager();
+    RFManager();
 
     void begin();
     void update();
+
     void send();
-    void setRFManager(RFManager* manager);
+        void sendHeartbeat();
 
 private:
-    unsigned long lastHeartbeat = 0;
-    RFManager* rf = nullptr;
+
 };
