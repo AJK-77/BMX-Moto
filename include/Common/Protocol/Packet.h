@@ -21,6 +21,8 @@ public:
                    uint8_t receiver,
                    uint8_t messageType);
 
+    bool addHeartbeat(uint16_t uptime);
+
     uint16_t getLength() const;
     uint8_t* getData();
 

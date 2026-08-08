@@ -5,6 +5,8 @@
 // RF Manager
 // ============================================================
 
+#include "Common/Protocol/Packet.h"
+
 class RFManager
 {
 public:
@@ -12,11 +14,10 @@ public:
 
     void begin();
     void update();
-    void sendPacket();
 
     void send();
-        void sendHeartbeat();
+    void sendHeartbeat();
 
 private:
-
+    void sendPacket(Packet& packet);
 };

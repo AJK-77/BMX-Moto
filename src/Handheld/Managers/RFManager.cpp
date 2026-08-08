@@ -2,6 +2,10 @@
 
 #include "Handheld/Managers/RFManager.h"
 
+#include "Common/Constants.h"
+
+#include "Common/NodeConfig.h"
+
 RFManager::RFManager()
 {
 }
@@ -21,13 +25,24 @@ void RFManager::send()
 
 void RFManager::sendHeartbeat()
 {
-    // TODO:
-    // Heartbeat-blok toevoegen aan pakket
+    Packet packet;
 
-    sendPacket();
+    packet.clear();
+
+    packet.addHeader(NODE_ADDRESS,
+                     ADDRESS_BROADCAST,
+                     MESSAGE_HEARTBEAT);
+
+    packet.addHeartbeat(millis() / 1000);
+
+    sendPacket(packet);
 }
 
-void RFManager::sendPacket()
+void RFManager::sendPacket(Packet& packet)
 {
-    Serial.println("RF Packet");
+    Serial.print("RF Packet - ");
+
+    Serial.print(packet.getLength());
+
+    Serial.println(" bytes");
 }
