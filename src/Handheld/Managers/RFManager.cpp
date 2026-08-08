@@ -1,3 +1,5 @@
+#include <Arduino.h>
+
 #include "Handheld/Managers/RFManager.h"
 
 RFManager::RFManager()
@@ -16,8 +18,16 @@ void RFManager::send()
 {
     // TODO:
 }
+
 void RFManager::sendHeartbeat()
 {
     // TODO:
-    // Bouw en verzend Heartbeat pakket
+    // Heartbeat-blok toevoegen aan pakket
+
+    sendPacket();
+}
+
+void RFManager::sendPacket()
+{
+    Serial.println("RF Packet");
 }

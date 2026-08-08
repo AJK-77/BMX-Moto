@@ -12,6 +12,7 @@ public:
 
     void begin();
     void update();
+    void sendPacket();
 
     void send();
         void sendHeartbeat();
