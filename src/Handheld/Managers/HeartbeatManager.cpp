@@ -14,7 +14,8 @@ void HeartbeatManager::begin()
 
 void HeartbeatManager::send()
 {
-    Serial.println("Heartbeat");
+    // Debug (tijdelijk)
+    //Serial.println("Heartbeat");
     
     if (rf != nullptr)
 {
