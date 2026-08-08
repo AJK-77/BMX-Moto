@@ -30,16 +30,27 @@ bool Packet::addUInt16(uint16_t value)
 
 bool Packet::addHeader(uint8_t sender,
                        uint8_t receiver,
-                       uint8_t messageType)
+                       MessageType messageType)
 {
     return addByte(PACKET_VERSION) &&
            addByte(sender) &&
            addByte(receiver) &&
-           addByte(messageType);
+           addByte(static_cast<uint8_t>(messageType));
 }
+bool Packet::addCRC()
+{
+    uint16_t crc = 0;
 
+    for (uint16_t i = 0; i < length; i++)
+    {
+        crc ^= data[i];
+    }
+
+    return addUInt16(crc);
+}
 bool Packet::addHeartbeat(uint16_t uptime)
 {
+    
     return addUInt16(uptime);
 }
 

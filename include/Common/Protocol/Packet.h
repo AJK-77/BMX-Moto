@@ -7,6 +7,8 @@
 
 #include <stdint.h>
 
+#include "Common/Protocol/MessageType.h"
+
 class Packet
 {
 public:
@@ -19,12 +21,16 @@ public:
 
     bool addHeader(uint8_t sender,
                    uint8_t receiver,
-                   uint8_t messageType);
+                   MessageType messageType);
 
     bool addHeartbeat(uint16_t uptime);
 
+    bool addCRC();
+    
     uint16_t getLength() const;
     uint8_t* getData();
+
+
 
 private:
     static constexpr uint16_t MAX_PACKET_SIZE = 64;

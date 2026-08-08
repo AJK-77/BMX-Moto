@@ -30,10 +30,12 @@ void RFManager::sendHeartbeat()
     packet.clear();
 
     packet.addHeader(NODE_ADDRESS,
-                     ADDRESS_BROADCAST,
-                     MESSAGE_HEARTBEAT);
+                 ADDRESS_BROADCAST,
+                 MessageType::Heartbeat);
 
     packet.addHeartbeat(millis() / 1000);
+
+    packet.addCRC();
 
     sendPacket(packet);
 }
