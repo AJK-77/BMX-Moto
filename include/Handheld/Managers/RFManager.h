@@ -1,10 +1,8 @@
 #pragma once
 
-// ============================================================
-// BMX-Moto
-// RF Manager
-// ============================================================
+#include <stdint.h>
 
+#include "Common/RF/ESPNowDriver.h"
 #include "Common/Protocol/Packet.h"
 
 class RFManager
@@ -12,7 +10,7 @@ class RFManager
 public:
     RFManager();
 
-    void begin();
+    bool begin();
     void update();
 
     void send();
@@ -20,4 +18,6 @@ public:
 
 private:
     void sendPacket(Packet& packet);
+
+    ESPNowDriver espNow;
 };

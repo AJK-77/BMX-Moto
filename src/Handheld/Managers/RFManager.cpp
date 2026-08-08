@@ -3,19 +3,22 @@
 #include "Handheld/Managers/RFManager.h"
 
 #include "Common/Constants.h"
-
 #include "Common/NodeConfig.h"
+#include "Common/Protocol/Packet.h"
+#include "Common/Protocol/MessageType.h"
 
 RFManager::RFManager()
 {
 }
 
-void RFManager::begin()
+bool RFManager::begin()
 {
+    return espNow.begin();
 }
 
 void RFManager::update()
 {
+    espNow.update();
 }
 
 void RFManager::send()
@@ -29,9 +32,10 @@ void RFManager::sendHeartbeat()
 
     packet.clear();
 
-    packet.addHeader(NODE_ADDRESS,
-                 ADDRESS_BROADCAST,
-                 MessageType::Heartbeat);
+    packet.addHeader(
+    nodeConfig.getNodeAddress(),
+    ADDRESS_BROADCAST,
+    MessageType::Heartbeat);
 
     packet.addHeartbeat(millis() / 1000);
 
@@ -42,9 +46,10 @@ void RFManager::sendHeartbeat()
 
 void RFManager::sendPacket(Packet& packet)
 {
+    // TODO:
+    // ESP-NOW verzending volgt in de volgende stap.
+
     Serial.print("RF Packet - ");
-
     Serial.print(packet.getLength());
-
     Serial.println(" bytes");
 }

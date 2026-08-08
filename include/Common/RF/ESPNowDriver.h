@@ -2,23 +2,21 @@
 
 // ============================================================
 // BMX-Moto
-// Node Configuration
+// ESP-NOW Driver
 // ============================================================
 
 #include <stdint.h>
 
-class NodeConfig
+class ESPNowDriver
 {
 public:
-    NodeConfig();
+    ESPNowDriver();
 
     bool begin();
 
-    uint8_t getNodeAddress() const;
+    bool addPeer(const uint8_t* macAddress);
 
-private:
-    uint8_t nodeAddress;
-    bool valid;
+    bool send(const uint8_t* data, uint16_t length);
+
+    void update();
 };
-
-extern NodeConfig nodeConfig;
