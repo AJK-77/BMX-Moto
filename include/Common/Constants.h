@@ -11,7 +11,7 @@ constexpr unsigned long HEARTBEAT_INTERVAL_MS = 1000;
 // RF Protocol
 // ============================================================
 
-constexpr uint8_t ADDRESS_BROADCAST = 255;
+constexpr uint8_t ADDRESS_BROADCAST = 0;
 
 
 // Header

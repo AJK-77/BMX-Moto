@@ -13,6 +13,7 @@ public:
     NodeConfig();
 
     bool begin();
+    bool saveNodeAddress(uint8_t address);
 
     uint8_t getNodeAddress() const;
 

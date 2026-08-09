@@ -6,7 +6,6 @@
 namespace
 {
     constexpr const char* NVS_NAMESPACE = "bmxnode";
-
     constexpr const char* KEY_ADDRESS = "address";
 
     constexpr uint8_t DEFAULT_NODE_ADDRESS = 1;
@@ -26,7 +25,9 @@ bool NodeConfig::begin()
 
     if (!preferences.begin(NVS_NAMESPACE, true))
     {
-        Serial.println("NodeConfig: NVS open failed");
+        Serial.println("NodeConfig: no configuration found");
+
+        valid = false;
         return false;
     }
 
@@ -49,6 +50,35 @@ bool NodeConfig::begin()
     valid = true;
 
     Serial.print("NodeConfig: address = ");
+    Serial.println(nodeAddress);
+
+    return true;
+}
+
+bool NodeConfig::saveNodeAddress(uint8_t address)
+{
+    Preferences preferences;
+
+    if (!preferences.begin(NVS_NAMESPACE, false))
+    {
+        Serial.println("NodeConfig: NVS open for write failed");
+        return false;
+    }
+
+    size_t written = preferences.putUChar(KEY_ADDRESS, address);
+
+    preferences.end();
+
+    if (written != sizeof(uint8_t))
+    {
+        Serial.println("NodeConfig: address save failed");
+        return false;
+    }
+
+    nodeAddress = address;
+    valid = true;
+
+    Serial.print("NodeConfig: address saved = ");
     Serial.println(nodeAddress);
 
     return true;

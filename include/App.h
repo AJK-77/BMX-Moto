@@ -5,8 +5,10 @@
 // Handheld Application
 // ============================================================
 
-#include "Handheld/Managers/HeartbeatManager.h"
-#include "Handheld/Managers/RFManager.h"
+#include "Common/USBService.h"
+#include "Common/HeartbeatManager.h"
+#include "Common/RFManager.h"
+
 
 class App
 {
@@ -27,6 +29,7 @@ private:
     // ========================================================
 
     // Worden later toegevoegd
+    USBService       usb;
     HeartbeatManager heartbeat;
     // EventManager     event;
     // StatusManager    status;

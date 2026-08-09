@@ -1,6 +1,6 @@
 #include <Arduino.h>
 
-#include "Handheld/Managers/RFManager.h"
+#include "Common/RFManager.h"
 
 #include "Common/Constants.h"
 #include "Common/NodeConfig.h"

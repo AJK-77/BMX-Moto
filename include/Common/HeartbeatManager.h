@@ -5,7 +5,7 @@
 // Heartbeat Manager
 // ============================================================
 
-#include "Handheld/Managers/RFManager.h"
+#include "Common/RFManager.h"
 
 class HeartbeatManager
 {

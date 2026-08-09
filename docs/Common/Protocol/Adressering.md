@@ -56,9 +56,9 @@ Dit is ruim voldoende voor de huidige en toekomstige omvang van het BMX-Moto sys
 | Adres | Betekenis |
 |-------:|-----------|
 | 0 | Broadcast |
-| 1 | Handheld |
-| 2-31 | Gate-Nodes |
-| 32-127 | Displays |
+| 1-10 | Handheld |
+| 11-30 | Gate-Nodes |
+| 31-127 | Displays |
 | 128-254 | Gereserveerd voor toekomstige uitbreidingen |
 | 255 | Ongeldig / Niet toegewezen |
 

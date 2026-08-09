@@ -1,7 +1,7 @@
 #include <Arduino.h>
 
 #include "Common/Constants.h"
-#include "Handheld/Managers/HeartbeatManager.h"
+#include "Common/HeartbeatManager.h"
 
 HeartbeatManager::HeartbeatManager()
 {

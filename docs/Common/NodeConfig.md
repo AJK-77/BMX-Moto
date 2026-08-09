@@ -25,6 +25,27 @@ De configuratie wordt vervolgens opgeslagen in NVS.
 
 De nodes worden normaal niet via USB gevoed. USB wordt daarom uitsluitend gebruikt als configuratie-/serviceverbinding.
 
+## Service interface
+
+Via USB zijn de volgende functies beschikbaar:
+
+- Debug en logging
+- Firmware update
+- NodeConfig uitlezen
+- NodeConfig wijzigen
+
+De NodeConfig kan alleen via USB worden gewijzigd.
+
+### OTA
+
+OTA is bedoeld voor firmware-updates.
+
+Een OTA-update mag de bestaande NodeConfig in NVS niet wijzigen.
+
+Debug en logging kunnen technisch ook via de netwerkverbinding beschikbaar worden gemaakt, maar dit is geen vereiste voor de OTA-functionaliteit.
+
+In de normale praktijk kan de Handheld via USB met een laptop worden verbonden. Hierdoor zijn debug/logging en configuratie beschikbaar en kan vanuit de Handheld een firmware-update naar de overige nodes worden uitgevoerd.
+
 ## Normale werking
 
 Bij het opstarten:
