@@ -13,12 +13,14 @@ namespace
 
 NodeConfig nodeConfig;
 
+
 NodeConfig::NodeConfig()
     : nodeAddress(DEFAULT_NODE_ADDRESS),
       valid(false),
       hardwareType(HardwareType::Unknown)
 {
 }
+
 
 bool NodeConfig::begin()
 {
@@ -82,6 +84,7 @@ bool NodeConfig::begin()
     return true;
 }
 
+
 bool NodeConfig::saveNodeAddress(uint8_t address)
 {
     Preferences preferences;
@@ -116,42 +119,48 @@ bool NodeConfig::saveNodeAddress(uint8_t address)
     return true;
 }
 
+
 uint8_t NodeConfig::getNodeAddress() const
 {
     return nodeAddress;
 }
+
 
 HardwareType NodeConfig::getHardwareType() const
 {
     return hardwareType;
 }
 
+
 bool NodeConfig::isHH() const
 {
     return hardwareType == HardwareType::HH;
 }
+
 
 bool NodeConfig::isGateNode() const
 {
     return hardwareType == HardwareType::GateNode;
 }
 
+
 bool NodeConfig::isDisplay() const
 {
     return hardwareType == HardwareType::Display;
 }
 
+
 void NodeConfig::determineHardwareType()
 {
-    if (nodeAddress >= 1 && nodeAddress <= 9)
+    if (nodeAddress >= 1 && nodeAddress <= 10)
     {
         hardwareType = HardwareType::HH;
     }
-    else if (nodeAddress >= 11 && nodeAddress <= 19)
+    else if (nodeAddress >= 11 && nodeAddress <= 20)
     {
         hardwareType = HardwareType::GateNode;
     }
-    else if (nodeAddress >= 20 && nodeAddress <= 29)
+    else if (nodeAddress >= 21 && nodeAddress <= 30)
     {
         hardwareType = HardwareType::Display;
     }
