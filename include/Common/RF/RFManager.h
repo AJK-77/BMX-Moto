@@ -8,6 +8,8 @@
 class RFManager
 {
 public:
+    using ActivityCallback = void (*)(void);
+
     RFManager();
 
     bool begin();
@@ -16,8 +18,12 @@ public:
     void send();
     void sendHeartbeat();
 
+    void setActivityCallback(ActivityCallback callback);
+
 private:
     void sendPacket(Packet& packet);
+    void activity();
 
     ESPNowDriver espNow;
+    ActivityCallback activityCallback = nullptr;
 };

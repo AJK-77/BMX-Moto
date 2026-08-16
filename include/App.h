@@ -1,39 +1,30 @@
 #pragma once
 
-// ============================================================
-// BMX-Moto
-// Handheld Application
-// ============================================================
-
-#include "Common/USBService.h"
+#include "Common/RF/RFManager.h"
 #include "Common/HeartbeatManager.h"
-#include "Common/RFManager.h"
+#include "Common/USBManager.h"
 
+#include "GateNode/GateNode.h"
+#include "Displays/485Display/485Display.h"
 
 class App
 {
 public:
     App();
 
-    // Initialisatie
     void begin();
-    
-
-    // Hoofdprogramma
     void update();
 
 private:
+    static void onRFActivity();
+    static void onHeartbeat();
 
-    // ========================================================
-    // Managers
-    // ========================================================
+    static App* instance;
 
-    // Worden later toegevoegd
-    USBService       usb;
+    RFManager rf;
     HeartbeatManager heartbeat;
-    // EventManager     event;
-    // StatusManager    status;
-    RFManager        rf;
-    // BatteryManager   battery;
-    // SettingsManager  settings;
+    USBManager usb;
+
+    GateNode gateNode;
+    Display485 display485;
 };

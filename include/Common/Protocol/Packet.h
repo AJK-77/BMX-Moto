@@ -28,8 +28,11 @@ public:
     bool addCRC();
     
     uint16_t getLength() const;
-    uint8_t* getData();
 
+    uint8_t getSender() const;
+    uint8_t getReceiver() const;
+
+    uint8_t* getData();
 
 
 private:
@@ -37,4 +40,6 @@ private:
 
     uint8_t data[MAX_PACKET_SIZE];
     uint16_t length = 0;
+
+    
 };

@@ -15,7 +15,8 @@ NodeConfig nodeConfig;
 
 NodeConfig::NodeConfig()
     : nodeAddress(DEFAULT_NODE_ADDRESS),
-      valid(false)
+      valid(false),
+      hardwareType(HardwareType::Unknown)
 {
 }
 
@@ -28,6 +29,8 @@ bool NodeConfig::begin()
         Serial.println("NodeConfig: no configuration found");
 
         valid = false;
+        hardwareType = HardwareType::Unknown;
+
         return false;
     }
 
@@ -38,19 +41,43 @@ bool NodeConfig::begin()
         preferences.end();
 
         valid = false;
+        hardwareType = HardwareType::Unknown;
+
         return false;
     }
 
     nodeAddress = preferences.getUChar(
         KEY_ADDRESS,
-        DEFAULT_NODE_ADDRESS);
+        DEFAULT_NODE_ADDRESS
+    );
 
     preferences.end();
 
     valid = true;
 
+    determineHardwareType();
+
     Serial.print("NodeConfig: address = ");
     Serial.println(nodeAddress);
+
+    switch (hardwareType)
+    {
+        case HardwareType::HH:
+            Serial.println("NodeConfig: hardware = HandHeld");
+            break;
+
+        case HardwareType::GateNode:
+            Serial.println("NodeConfig: hardware = GateNode");
+            break;
+
+        case HardwareType::Display:
+            Serial.println("NodeConfig: hardware = Display");
+            break;
+
+        default:
+            Serial.println("NodeConfig: hardware = Unknown");
+            break;
+    }
 
     return true;
 }
@@ -65,7 +92,10 @@ bool NodeConfig::saveNodeAddress(uint8_t address)
         return false;
     }
 
-    size_t written = preferences.putUChar(KEY_ADDRESS, address);
+    size_t written = preferences.putUChar(
+        KEY_ADDRESS,
+        address
+    );
 
     preferences.end();
 
@@ -78,6 +108,8 @@ bool NodeConfig::saveNodeAddress(uint8_t address)
     nodeAddress = address;
     valid = true;
 
+    determineHardwareType();
+
     Serial.print("NodeConfig: address saved = ");
     Serial.println(nodeAddress);
 
@@ -87,4 +119,44 @@ bool NodeConfig::saveNodeAddress(uint8_t address)
 uint8_t NodeConfig::getNodeAddress() const
 {
     return nodeAddress;
+}
+
+HardwareType NodeConfig::getHardwareType() const
+{
+    return hardwareType;
+}
+
+bool NodeConfig::isHH() const
+{
+    return hardwareType == HardwareType::HH;
+}
+
+bool NodeConfig::isGateNode() const
+{
+    return hardwareType == HardwareType::GateNode;
+}
+
+bool NodeConfig::isDisplay() const
+{
+    return hardwareType == HardwareType::Display;
+}
+
+void NodeConfig::determineHardwareType()
+{
+    if (nodeAddress >= 1 && nodeAddress <= 9)
+    {
+        hardwareType = HardwareType::HH;
+    }
+    else if (nodeAddress >= 11 && nodeAddress <= 19)
+    {
+        hardwareType = HardwareType::GateNode;
+    }
+    else if (nodeAddress >= 20 && nodeAddress <= 29)
+    {
+        hardwareType = HardwareType::Display;
+    }
+    else
+    {
+        hardwareType = HardwareType::Unknown;
+    }
 }

@@ -37,6 +37,12 @@ bool Packet::addHeader(uint8_t sender,
            addByte(receiver) &&
            addByte(static_cast<uint8_t>(messageType));
 }
+
+bool Packet::addHeartbeat(uint16_t uptime)
+{
+    return addUInt16(uptime);
+}
+
 bool Packet::addCRC()
 {
     uint16_t crc = 0;
@@ -48,15 +54,30 @@ bool Packet::addCRC()
 
     return addUInt16(crc);
 }
-bool Packet::addHeartbeat(uint16_t uptime)
-{
-    
-    return addUInt16(uptime);
-}
 
 uint16_t Packet::getLength() const
 {
     return length;
+}
+
+uint8_t Packet::getSender() const
+{
+    if (length < 2)
+    {
+        return 0;
+    }
+
+    return data[1];
+}
+
+uint8_t Packet::getReceiver() const
+{
+    if (length < 3)
+    {
+        return 0;
+    }
+
+    return data[2];
 }
 
 uint8_t* Packet::getData()

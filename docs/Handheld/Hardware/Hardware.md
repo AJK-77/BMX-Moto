@@ -223,6 +223,27 @@ De IP5306 verzorgt:
 - 5V boost
 - Power-key functie
 
+Power-off
+
+De automatische power-off van de IP5306 bleek in de praktijk niet betrouwbaar genoeg voor de gewenste toepassing. Daarom is gekozen voor een hardwarematige omweg.
+
+Als laatste stap van de power-off procedure wordt via TCA8418 C5 een NC-relais aangestuurd. Het relais onderbreekt de batterijspanning naar de IP5306 kortstondig.
+
+De werking is:
+
+HH voert de normale softwarematige afsluitprocedure uit.
+Als laatste actie wordt TCA8418 C5 geactiveerd.
+C5 stuurt het NC-relais aan.
+Het relais opent het batterijpad naar de IP5306.
+De batterijspanning wordt kort onderbroken.
+De IP5306 schakelt hierdoor naar de OFF-status.
+Het relais valt na het spanningsverlies weer af en het NC-contact sluit opnieuw.
+De IP5306 blijft uit totdat de KEY opnieuw wordt bediend.
+
+Voor het relais wordt een NEC/KEMET UD2-4.5NU overwogen. Dit is een compact DPDT-relais met twee wisselcontacten. De twee NC-contacten kunnen parallel worden gebruikt om de beschikbare contactbelasting te vergroten.
+
+De relaissturing wordt uitgevoerd met een BC547; C5 hoeft daarbij alleen het stuursignaal voor de transistor te leveren.
+
 ---
 
 ## Batterijstatus

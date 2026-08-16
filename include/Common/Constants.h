@@ -5,7 +5,7 @@
 // Constants
 // ============================================================
 
-constexpr unsigned long HEARTBEAT_INTERVAL_MS = 1000;
+constexpr unsigned long HEARTBEAT_INTERVAL_MS = 5000;
 
 // ============================================================
 // RF Protocol

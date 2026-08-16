@@ -1,9 +1,9 @@
 #pragma once
 
-class USBService
+class USBManager
 {
 public:
-    USBService();
+    USBManager();
 
     void begin();
     void update();

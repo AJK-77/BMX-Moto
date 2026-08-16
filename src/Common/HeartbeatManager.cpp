@@ -14,13 +14,15 @@ void HeartbeatManager::begin()
 
 void HeartbeatManager::send()
 {
-    // Debug (tijdelijk)
-    //Serial.println("Heartbeat");
-    
     if (rf != nullptr)
-{
-    rf->sendHeartbeat();
-}
+    {
+        rf->sendHeartbeat();
+    }
+
+    if (heartbeatCallback != nullptr)
+    {
+        heartbeatCallback();
+    }
 }
 
 void HeartbeatManager::update()
@@ -32,7 +34,13 @@ void HeartbeatManager::update()
         send();
     }
 }
+
 void HeartbeatManager::setRFManager(RFManager* manager)
 {
     rf = manager;
+}
+
+void HeartbeatManager::setHeartbeatCallback(HeartbeatCallback callback)
+{
+    heartbeatCallback = callback;
 }

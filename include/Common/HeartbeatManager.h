@@ -5,19 +5,25 @@
 // Heartbeat Manager
 // ============================================================
 
-#include "Common/RFManager.h"
+#include "Common/RF/RFManager.h"
 
 class HeartbeatManager
 {
 public:
+    using HeartbeatCallback = void (*)(void);
+
     HeartbeatManager();
 
     void begin();
     void update();
     void send();
+
     void setRFManager(RFManager* manager);
+    void setHeartbeatCallback(HeartbeatCallback callback);
 
 private:
     unsigned long lastHeartbeat = 0;
+
     RFManager* rf = nullptr;
+    HeartbeatCallback heartbeatCallback = nullptr;
 };

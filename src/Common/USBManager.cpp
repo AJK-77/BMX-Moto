@@ -2,20 +2,20 @@
 #include <cstring>
 #include <cstdlib>
 
-#include "Common/USBService.h"
+#include "Common/USBManager.h"
 #include "Common/NodeConfig.h"
 
-USBService::USBService()
+USBManager::USBManager()
 {
 }
 
-void USBService::begin()
+void USBManager::begin()
 {
-    Serial.println("USB Service ready");
+    Serial.println("USB Manager ready");
     Serial.println("Type: set address <number>");
 }
 
-void USBService::update()
+void USBManager::update()
 {
     if (!Serial.available())
     {
@@ -33,7 +33,7 @@ void USBService::update()
     processCommand(command.c_str());
 }
 
-void USBService::processCommand(const char* command)
+void USBManager::processCommand(const char* command)
 {
     const char* prefix = "set address ";
 
