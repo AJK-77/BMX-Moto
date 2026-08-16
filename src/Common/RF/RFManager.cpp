@@ -4,17 +4,19 @@
 
 #include "Common/Constants.h"
 #include "Common/NodeConfig.h"
-#include "Common/Protocol/Packet.h"
-#include "Common/Protocol/MessageType.h"
+#include "Common/Protocol/RFProtocol.h"
+
 
 RFManager::RFManager()
 {
 }
 
+
 bool RFManager::begin()
 {
     return espNow.begin();
 }
+
 
 void RFManager::update()
 {
@@ -32,29 +34,43 @@ void RFManager::update()
     }
 
     activity();
+
+    Packet packet;
+
+    if (!packet.load(data, length))
+    {
+        return;
+    }
+
+    processPacket(packet);
 }
+
 
 void RFManager::send()
 {
 }
 
+
 void RFManager::sendHeartbeat()
 {
+    if (raceState == nullptr)
+    {
+        return;
+    }
+
     Packet packet;
 
-    packet.clear();
-
-    packet.addHeader(
-        nodeConfig.getNodeAddress(),
-        ADDRESS_BROADCAST,
-        MessageType::Heartbeat
-    );
-
-    packet.addHeartbeat(millis() / 1000);
-    packet.addCRC();
+    if (!RFProtocol::createHeartbeat(
+            packet,
+            nodeConfig.getNodeAddress(),
+            raceState->getEventSequence()))
+    {
+        return;
+    }
 
     sendPacket(packet);
 }
+
 
 void RFManager::sendPacket(Packet& packet)
 {
@@ -73,10 +89,50 @@ void RFManager::sendPacket(Packet& packet)
     }
 }
 
+
 void RFManager::setActivityCallback(ActivityCallback callback)
 {
     activityCallback = callback;
 }
+
+
+void RFManager::setRaceState(RaceState* state)
+{
+    raceState = state;
+}
+
+
+void RFManager::processPacket(Packet& packet)
+{
+    if (!RFProtocol::validatePacket(packet))
+    {
+        return;
+    }
+
+    switch (packet.getMessageType())
+    {
+        case MessageType::Heartbeat:
+        {
+            break;
+        }
+
+        case MessageType::Event:
+        {
+            break;
+        }
+
+        case MessageType::Status:
+        {
+            break;
+        }
+
+        default:
+        {
+            break;
+        }
+    }
+}
+
 
 void RFManager::activity()
 {

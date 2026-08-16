@@ -1,136 +1,381 @@
-# Events
-
-**Status:** Concept v1.0
+# BMX-Moto — Events
 
 ## Doel
 
-Dit document definieert de betekenis van gebeurtenissen binnen het BMX
-Moto-systeem. Een event beschrijft **wat er is gebeurd**. De concrete
-codering, verzendwijze, bevestiging en eventuele herhaling worden later
-vastgelegd in `RFProtocol.md`.
+Dit document beschrijft de gebeurtenissen (events) die de race-status kunnen veranderen of de synchronisatie tussen nodes ondersteunen.
 
-Een event is niet hetzelfde als een heartbeat. De heartbeat bevestigt elke
-5 seconden de aanwezigheid en actuele status. Een event wordt direct verstuurd
-wanneer er iets relevants verandert.
+Een event beschrijft **wat er is gebeurd**. De actuele officiële toestand wordt vastgelegd in een volledig `StatusReport`.
 
-Er zijn twee soorten events:
+De HH is normaal de Master (president). De GateNode is de backup-master (vice-president) en kan de Master-rol overnemen wanneer de HH niet meer bereikbaar is.
 
-- **Wedstrijd-events:** veranderen de wedstrijdstatus, zoals een gate-drop of
-  een handmatige wijziging.
-- **Systeem-events:** beschrijven de beschikbaarheid of rol van een node,
-  bijvoorbeeld een uitval, terugkeer of masterwissel.
+---
 
-## Algemene regels
+## Event sequence
 
-- Alleen de actieve master mag de officiële wedstrijdstatus wijzigen.
-- Een wijziging van de wedstrijdstatus verhoogt `eventSequence` en wordt direct
-  als actuele status naar de andere nodes verstuurd.
-- Events en statusberichten behoren bij een `sessionId`.
-- Berichten uit een oude sessie worden genegeerd.
-- De exacte datavelden en identifiers volgen in het RF-protocol.
+Elke nieuwe officiële statuswijziging krijgt een oplopende `eventSequence`.
 
-## Events
+- `0000` is altijd een `SESSION_RESET`.
+- Bij een reset wordt alle eerder bekende informatie als ongeldig beschouwd.
+- Na `SESSION_RESET` begint iedereen opnieuw te tellen.
+- De `eventSequence` staat los van Manche en Moto.
+- De teller loopt gedurende de sessie op tot maximaal `9999`.
 
-### `GATE_DROP`
+Voorbeeld:
 
-De Gate-Node heeft een geldig groen startlicht gedetecteerd.
+```text
+SESSION_RESET       → 0000
+MANUAL_UPDATE       → 0001
+GATE_DROP           → 0002
+MANUAL_UPDATE       → 0003
+GATE_DROP           → 0004
+MANUAL_UPDATE       → 0005
+```
 
-- Alleen de Gate-Node mag dit event maken.
-- Per groen startlicht mag maximaal één `GATE_DROP` ontstaan.
-- In AUTO-modus verwerkt de actieve master dit event door `moto` met één te
-  verhogen en vervolgens de gewijzigde wedstrijdstatus te versturen.
-- In MANUAL-modus verandert dit event de wedstrijdstatus niet.
-- De technische detectie van het startlicht staat in de Gate-Node-documentatie.
+De Moto is dus **niet** de event counter. Een Moto kan tijdens een wedstrijd worden overgeslagen, teruggezet of opnieuw gereden.
 
-### `MANUAL_UPDATE`
+---
 
-De gebruiker heeft op de Handheld een wedstrijdwaarde gewijzigd en bevestigd.
+## Unieke event-ID en dubbele events
 
-Dit event ontstaat bij:
+Een event heeft een unieke event-ID binnen de sessie.
 
-- bevestigen van numerieke invoer met **OK**;
-- een druk op **+**;
-- een druk op **-**.
+De ontvanger verwerkt een event maximaal één keer.
 
-De Handheld verwerkt de wijziging als actieve master, verhoogt
-`eventSequence` en verstuurt de actuele status direct naar de Gate-Node en
-alle displays. De Gate-Node slaat deze status op als failoverbasis.
+Bijvoorbeeld:
 
-De `manche` is uitsluitend handmatig aanpasbaar. Een handmatige wijziging van
-`moto` is ook toegestaan wanneer de gebruiker in MANUAL-modus werkt.
+```text
+GATE_DROP #0042
+     ↓
+HH verwerkt
+     ↓
+moto 045 → 046
+```
 
-### `SESSION_RESET`
+Als hetzelfde event door een retry opnieuw wordt ontvangen:
 
-De Handheld start bij aanvang van een wedstrijddag een nieuwe sessie.
+```text
+GATE_DROP #0042 opnieuw
+     ↓
+HH: al verwerkt
+     ↓
+geen tweede moto++
+```
 
-- `sessionId` krijgt een nieuwe waarde.
-- `eventSequence` wordt teruggezet naar `0`.
-- De actuele wedstrijdstatus wordt direct naar alle nodes verstuurd.
-- De Gate-Node slaat de nieuwe sessie op als failoverbasis.
+De event-ID wordt gebruikt om dubbele verwerking te voorkomen. De technische uitvoering van event-ID, ACK en retry wordt vastgelegd in `RFProtocol.md`.
 
-### `MASTER_CHANGED`
+---
 
-De actieve masterrol is gewijzigd.
+## Event types
 
-Dit event wordt direct met de actuele status verstuurd in de volgende
-situaties:
+### SESSION_RESET
 
-- de Gate-Node neemt de masterrol over nadat de Handheld niet beschikbaar is;
-- de Handheld komt terug, leest de actuele status bij de Gate-Node uit en
-  neemt de masterrol weer over.
+Start een nieuwe sessie/racedag.
 
-Bij overname door de Gate-Node wordt tijdelijk `AUTO` gebruikt, ook wanneer
-de Handheld voor de uitval in MANUAL-modus stond.
+Effect:
 
-### `NODE_OFFLINE`
+- alle nodes vergeten de vorige sessiestatus;
+- een nieuwe `sessionId` wordt actief;
+- `eventSequence` wordt `0000`;
+- de race-status wordt teruggezet naar de uitgangssituatie.
 
-Een node heeft twee verwachte heartbeats gemist en wordt lokaal als niet
-beschikbaar gemarkeerd.
+`SESSION_RESET` wordt door de HH uitgevoerd.
 
-- Iedere ontvangende node maakt dit systeem-event voor zichzelf.
-- Dit event wordt afgeleid uit de heartbeat en hoeft niet als apart bericht
-  door de uitgevallen node te worden verzonden.
-- De lokale foutindicatie volgt de documentatie van de betreffende node.
-- De gevolgen hangen af van de rol van de uitgevallen node: een display mist
-  alleen zijn weergave, terwijl de Gate-Node bij verlies van de Handheld de
-  masterrol overneemt.
+---
 
-### `NODE_ONLINE`
+### MANUAL_UPDATE
 
-Een eerder niet-beschikbare node heeft weer een geldige heartbeat of
-statusupdate verzonden.
+Een handmatige wijziging van de officiële Manche/Moto-status door de Master.
 
-- Iedere ontvangende node maakt dit systeem-event voor zichzelf.
-- De herstelde node vraagt de actuele status op bij de actieve master.
-- De actieve master antwoordt met de volledige status, zodat de herstelde
-  node zonder handmatige ingreep verder kan werken.
-- Een teruggekeerde Gate-Node slaat deze status weer op als failoverbasis.
-- Een teruggekeerd display hervat uitsluitend de weergave.
+Er zijn twee vormen.
 
-### `STATUS_REQUEST`
+#### Snelle correctie met +/-
 
-Een node vraagt de actuele wedstrijdstatus op bij de actieve master.
+De `+` en `-` bediening is bedoeld voor een snelle correctie van de actuele Moto.
 
-Dit event wordt gebruikt wanneer een node opnieuw online komt of na een reboot
-geen actuele lokale status heeft. De Handheld gebruikt het bovendien na
-terugkeer om de status bij de Gate-Node op te vragen voordat hij de masterrol
-terugneemt. Dit event wijzigt zelf geen wedstrijdstatus.
+Bijvoorbeeld:
 
-### `STATUS_RESPONSE`
+```text
+Display: 2055
+Werkelijke Moto: 2054
 
-Een node antwoordt op een `STATUS_REQUEST` met de volledige, actuele
-wedstrijdstatus. Minimaal `sessionId`, `eventSequence`, `manche`, `moto`,
-modus en actieve masterrol worden geleverd.
+-1
+ ↓
+Display: 2054
+```
 
-## Periodieke synchronisatie
+Een dergelijke correctie wordt **direct** bevestigd en vormt één `MANUAL_UPDATE` event.
 
-Een gewone periodieke synchronisatie is geen afzonderlijk event. Deze verloopt
-via de heartbeat.
+Er is geen `OK` nodig.
 
-## Samenhang met andere protocollen
+#### Handmatige invoer
 
-- `Heartbeat.md` definieert aanwezigheid, foutdetectie en de periodieke
-  synchronisatie.
-- `StatusReport.md` definieert de volledige gedeelde wedstrijdstatus.
-- `RFProtocol.md` definieert hoe events en statusberichten over ESP-NOW worden
-  verzonden.
+Bij het invoeren van een nieuwe Moto kan de DNS-manager rustig een waarde invoeren.
+
+Tijdens het invoeren blijft de officiële status ongewijzigd.
+
+Pas bij `OK` wordt de nieuwe waarde bevestigd:
+
+```text
+huidige status: 3 / 051
+
+invoer: 3 / 045
+
+OK
+ ↓
+MANUAL_UPDATE
+ ↓
+officiële status: 3 / 045
+```
+
+De displays mogen dus nooit een gedeeltelijk of nog niet bevestigde invoer tonen.
+
+---
+
+### GATE_DROP
+
+Een fysieke gate drop.
+
+Normaal meldt de GateNode alleen dat er daadwerkelijk een gate drop heeft plaatsgevonden:
+
+```text
+GateNode → HH
+          GATE_DROP
+```
+
+De HH verwerkt een `GATE_DROP` alleen wanneer de HH in **AUTO**-modus staat.
+
+In AUTO:
+
+```text
+GATE_DROP
+    ↓
+eventSequence++
+    ↓
+moto++
+    ↓
+nieuwe StatusReport
+```
+
+In MANUAL:
+
+```text
+GATE_DROP
+    ↓
+HH ontvangt event
+    ↓
+geen wijziging van de officiële Moto
+```
+
+De GateNode kan een fysieke gate drop blijven melden in MANUAL, maar de HH gebruikt die melding dan niet om de race-status te wijzigen.
+
+#### GateNode als backup-master
+
+Wanneer de HH niet bereikbaar is, kan de GateNode de Master-rol overnemen.
+
+In die situatie verwerkt de GateNode zelf de `GATE_DROP` en verhoogt hij de Moto met `+1`.
+
+De GateNode is daarmee de vice-president/backup-master van het systeem.
+
+---
+
+### MASTER_CHANGED
+
+Geeft aan dat de Master-rol is gewijzigd.
+
+Normale situatie:
+
+```text
+HH = Master
+GateNode = backup-master
+```
+
+Als de HH wegvalt:
+
+```text
+HH offline
+    ↓
+GateNode neemt Master-rol over
+```
+
+Een `MASTER_CHANGED` event kan door de GateNode worden gegenereerd wanneer hij vaststelt dat de HH niet meer bereikbaar is.
+
+Wanneer de HH terugkomt, wordt de Master-status opnieuw gesynchroniseerd.
+
+---
+
+### STATUS_REQUEST
+
+Een node vraagt de actuele officiële status op.
+
+Bijvoorbeeld:
+
+```text
+Display → HH
+STATUS_REQUEST
+```
+
+Dit verandert de race-status niet en verhoogt daarom de `eventSequence` niet.
+
+---
+
+### STATUS_RESPONSE
+
+Antwoord op een `STATUS_REQUEST`.
+
+De response bevat de volledige actuele `StatusReport`.
+
+Een `STATUS_RESPONSE` verandert de race-status niet en verhoogt daarom de `eventSequence` niet.
+
+---
+
+### NODE_OFFLINE
+
+Geeft aan dat een node niet meer bereikbaar is.
+
+Dit is een synchronisatie-/status-event en verandert niet automatisch de Manche/Moto.
+
+De exacte detectie en communicatie worden in `RFProtocol.md` uitgewerkt.
+
+---
+
+### NODE_ONLINE
+
+Geeft aan dat een node opnieuw bereikbaar is.
+
+Na het online komen moet de node zijn actuele officiële `StatusReport` kunnen synchroniseren.
+
+Dit event verandert niet automatisch de Manche/Moto.
+
+---
+
+## Master-principe
+
+De HH is normaal de centrale Master van het systeem.
+
+```text
+              HH
+           MASTER
+          /      \
+         /        \
+   GateNode      Displays
+   backup
+```
+
+De GateNode heeft echter voldoende informatie en bevoegdheid om bij uitval van de HH de Master-rol tijdelijk over te nemen.
+
+Daarmee ontstaat een eenvoudige failover:
+
+```text
+Normaal:
+
+HH → officiële status
+HH → displays
+HH → GateNode
+
+
+HH valt weg:
+
+GateNode → Master
+GateNode → officiële status
+GateNode → displays
+```
+
+Bij terugkeer van de HH moet de toestand opnieuw worden gesynchroniseerd. De exacte synchronisatieregels worden in `RFProtocol.md` vastgelegd.
+
+---
+
+## StatusReport
+
+Een event dat de officiële race-status verandert, resulteert in een nieuwe volledige `StatusReport`.
+
+Een StatusReport bevat minimaal:
+
+```text
+sessionId
+eventSequence
+manche
+moto
+mode
+masterId
+```
+
+Er worden geen losse status-delta's naar displays gestuurd.
+
+De Display hoeft dus niet te weten **waarom** een waarde veranderd is. Hij hoeft alleen de nieuwste geldige `StatusReport` te verwerken.
+
+---
+
+## Voorbeeld raceverloop
+
+Nieuwe sessie:
+
+```text
+SESSION_RESET
+eventSequence = 0000
+manche = 0
+moto = 000
+```
+
+Manche 1 wordt gestart:
+
+```text
+MANUAL_UPDATE
+eventSequence = 0001
+manche = 1
+moto = 000
+```
+
+Gate drop:
+
+```text
+GATE_DROP
+eventSequence = 0002
+manche = 1
+moto = 001
+```
+
+Snelle correctie naar Moto 003:
+
+```text
+MANUAL_UPDATE
+eventSequence = 0003
+manche = 1
+moto = 003
+```
+
+Volgende gate drop:
+
+```text
+GATE_DROP
+eventSequence = 0004
+manche = 1
+moto = 004
+```
+
+Handmatige wijziging terug naar Moto 002:
+
+```text
+MANUAL_UPDATE
+eventSequence = 0005
+manche = 1
+moto = 002
+```
+
+De event counter blijft dus oplopen, ongeacht welke Moto actief is.
+
+---
+
+## Niet in dit document
+
+De volgende technische details worden in `RFProtocol.md` vastgelegd:
+
+- concrete packet-opbouw;
+- bytevolgorde;
+- MessageType-codes;
+- event-ID-formaat;
+- ACK;
+- retry;
+- deduplicatie op protocolniveau;
+- CRC;
+- heartbeat en timeout;
+- synchronisatie na Master-failover.

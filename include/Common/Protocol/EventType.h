@@ -2,13 +2,16 @@
 
 // ============================================================
 // BMX-Moto
-// CRC-16
+// Event Types
 // ============================================================
 
 #include <stdint.h>
 
-class CRC
+
+enum class EventType : uint8_t
 {
-public:
-    static uint16_t calculate(const uint8_t* data, uint16_t length);
+    Reset         = 1,
+    GateDrop      = 2,
+    ManualChange  = 3,
+    MasterChanged = 4
 };

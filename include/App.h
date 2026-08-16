@@ -3,9 +3,11 @@
 #include "Common/RF/RFManager.h"
 #include "Common/HeartbeatManager.h"
 #include "Common/USBManager.h"
+#include "Common/RaceState.h"
 
 #include "GateNode/GateNode.h"
 #include "Displays/485Display/485Display.h"
+
 
 class App
 {
@@ -20,6 +22,8 @@ private:
     static void onHeartbeat();
 
     static App* instance;
+
+    RaceState raceState;
 
     RFManager rf;
     HeartbeatManager heartbeat;

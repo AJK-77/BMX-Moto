@@ -3,12 +3,15 @@
 #include "App.h"
 #include "Common/NodeConfig.h"
 
+
 App* App::instance = nullptr;
+
 
 App::App()
 {
     instance = this;
 }
+
 
 void App::begin()
 {
@@ -17,6 +20,7 @@ void App::begin()
     nodeConfig.begin();
     usb.begin();
 
+    rf.setRaceState(&raceState);
     rf.setActivityCallback(onRFActivity);
     rf.begin();
 
@@ -34,6 +38,7 @@ void App::begin()
     }
 }
 
+
 void App::update()
 {
     usb.update();
@@ -49,6 +54,7 @@ void App::update()
         display485.update();
     }
 }
+
 
 void App::onRFActivity()
 {
@@ -66,6 +72,7 @@ void App::onRFActivity()
         instance->display485.onRFActivity();
     }
 }
+
 
 void App::onHeartbeat()
 {
