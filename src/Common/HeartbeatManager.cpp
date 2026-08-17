@@ -3,14 +3,17 @@
 #include "Common/Constants.h"
 #include "Common/HeartbeatManager.h"
 
+
 HeartbeatManager::HeartbeatManager()
 {
 }
+
 
 void HeartbeatManager::begin()
 {
     lastHeartbeat = millis();
 }
+
 
 void HeartbeatManager::send()
 {
@@ -18,12 +21,8 @@ void HeartbeatManager::send()
     {
         rf->sendHeartbeat();
     }
-
-    if (heartbeatCallback != nullptr)
-    {
-        heartbeatCallback();
-    }
 }
+
 
 void HeartbeatManager::update()
 {
@@ -35,12 +34,8 @@ void HeartbeatManager::update()
     }
 }
 
+
 void HeartbeatManager::setRFManager(RFManager* manager)
 {
     rf = manager;
-}
-
-void HeartbeatManager::setHeartbeatCallback(HeartbeatCallback callback)
-{
-    heartbeatCallback = callback;
 }

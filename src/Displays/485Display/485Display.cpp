@@ -52,3 +52,8 @@ void Display485::onHeartbeat()
 {
     leds.greenHeartbeat();
 }
+
+void Display485::onHeartbeatReceived(uint16_t eventSequence)
+{
+    lastHeartbeatEvent = eventSequence;
+}

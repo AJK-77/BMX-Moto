@@ -21,6 +21,8 @@ public:
     void setRaceNumber(uint16_t raceNumber);
 
     uint16_t nextEvent();
+    void gateDrop();
+    void setEventSequence(uint16_t eventSequence);
 
 private:
     uint16_t eventSequence = 0;

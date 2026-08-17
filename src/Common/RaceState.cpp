@@ -50,3 +50,18 @@ uint16_t RaceState::nextEvent()
 
     return eventSequence;
 }
+
+void RaceState::gateDrop()
+{
+    nextEvent();
+
+    if (raceNumber < 9999)
+    {
+        raceNumber++;
+    }
+}
+
+void RaceState::setEventSequence(uint16_t value)
+{
+    eventSequence = value;
+}

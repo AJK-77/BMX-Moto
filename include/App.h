@@ -19,7 +19,7 @@ public:
 
 private:
     static void onRFActivity();
-    static void onHeartbeat();
+    static void onHeartbeatReceived(uint16_t eventSequence);
 
     static App* instance;
 

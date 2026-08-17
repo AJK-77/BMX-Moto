@@ -14,4 +14,4 @@ constexpr uint8_t PIN_LED_YELLOW = 25;  // Drop-Signal
 constexpr uint8_t PIN_LED_GREEN  = 26;  // Status / Heartbeat
 
 // Gate input
-constexpr uint8_t PIN_GATE_INPUT = 34;
+constexpr uint8_t PIN_GATE_INPUT = 35;

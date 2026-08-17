@@ -1,7 +1,7 @@
 #include <Arduino.h>
 
 #include "Common/RF/RFManager.h"
-
+#include "Common/Protocol/EventType.h"
 #include "Common/Constants.h"
 #include "Common/NodeConfig.h"
 #include "Common/Protocol/RFProtocol.h"
@@ -67,10 +67,37 @@ void RFManager::sendHeartbeat()
     {
         return;
     }
+    Serial.print("RF TX: Heartbeat, event ");
+    Serial.println(raceState->getEventSequence());
 
     sendPacket(packet);
 }
 
+void RFManager::sendEvent(EventType eventType)
+{
+    if (raceState == nullptr)
+    {
+        return;
+    }
+
+    Packet packet;
+
+    if (!RFProtocol::createEvent(
+            packet,
+            nodeConfig.getNodeAddress(),
+            ADDRESS_BROADCAST,
+            raceState->getEventSequence(),
+            eventType,
+            raceState->getRaceNumber()))
+    {
+        return;
+    }
+
+    Serial.print("RF TX: GateDrop, event ");
+    Serial.println(raceState->getEventSequence());
+
+    sendPacket(packet);
+}
 
 void RFManager::sendPacket(Packet& packet)
 {
@@ -96,6 +123,13 @@ void RFManager::setActivityCallback(ActivityCallback callback)
 }
 
 
+void RFManager::setHeartbeatRxCallback(
+    HeartbeatRxCallback callback)
+{
+    heartbeatRxCallback = callback;
+}
+
+
 void RFManager::setRaceState(RaceState* state)
 {
     raceState = state;
@@ -113,11 +147,72 @@ void RFManager::processPacket(Packet& packet)
     {
         case MessageType::Heartbeat:
         {
+            const uint16_t eventSequence =
+                packet.getEventSequence();
+
+            const uint8_t sender =
+                packet.getSender();
+
+            // Slaves nemen iedere heartbeat over.
+            if (!nodeConfig.isHH())
+            {
+                if (raceState != nullptr)
+                {
+                    raceState->setEventSequence(eventSequence);
+                }
+            }
+            // HH neemt alleen de eerste heartbeat van een andere node over.
+            else if (firstHeartbeat &&
+                     sender != nodeConfig.getNodeAddress())
+            {
+                if (raceState != nullptr)
+                {
+                    raceState->setEventSequence(eventSequence);
+                }
+
+                firstHeartbeat = false;
+
+                Serial.print("RF: First heartbeat accepted, event ");
+                Serial.println(eventSequence);
+            }
+
+            if (heartbeatRxCallback != nullptr)
+            {
+                heartbeatRxCallback(eventSequence);
+            }
+
             break;
         }
 
         case MessageType::Event:
         {
+            Serial.print("RF RX: ");
+
+            switch (packet.getEventType())
+            {
+                case EventType::GateDrop:
+                {
+                    Serial.print("GateDrop");
+
+                    if (raceState != nullptr &&
+                        nodeConfig.isHH())
+                    {
+                        raceState->gateDrop();
+                    }
+
+                    break;
+                }
+
+                default:
+                {
+                    Serial.print("Unknown event");
+                    break;
+                }
+            }
+
+            Serial.print(", event ");
+            Serial.println(packet.getEventSequence());
+
             break;
         }
 
@@ -141,3 +236,6 @@ void RFManager::activity()
         activityCallback();
     }
 }
+
+
+

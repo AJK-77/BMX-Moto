@@ -12,7 +12,9 @@ public:
 
     void onRFActivity();
     void onHeartbeat();
+    void onHeartbeatReceived(uint16_t eventSequence);
 
 private:
     LEDManager leds;
+    uint16_t lastHeartbeatEvent = 0;
 };
