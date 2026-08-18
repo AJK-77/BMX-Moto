@@ -26,6 +26,7 @@ void App::begin()
     rf.begin();
 
     heartbeat.setRFManager(&rf);
+    heartbeat.setHeartbeatCallback(onHeartbeat);
     heartbeat.begin();
 
     if (nodeConfig.isGateNode())
@@ -36,7 +37,8 @@ void App::begin()
     }
     else if (nodeConfig.isDisplay())
     {
-        display485.begin();
+    display485.setRaceState(&raceState);
+    display485.begin();
     }
 }
 
@@ -75,6 +77,22 @@ void App::onRFActivity()
     }
 }
 
+void App::onHeartbeat()
+{
+    if (instance == nullptr)
+    {
+        return;
+    }
+
+    if (nodeConfig.isGateNode())
+    {
+        instance->gateNode.onHeartbeat();
+    }
+    else if (nodeConfig.isDisplay())
+    {
+        instance->display485.onHeartbeat();
+    }
+}
 
 void App::onHeartbeatReceived(uint16_t eventSequence)
 {

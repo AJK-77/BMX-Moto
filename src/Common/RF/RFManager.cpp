@@ -67,11 +67,13 @@ void RFManager::sendHeartbeat()
     {
         return;
     }
-    Serial.print("RF TX: Heartbeat, event ");
+
+    Serial.print("TX Event ");
     Serial.println(raceState->getEventSequence());
 
     sendPacket(packet);
 }
+
 
 void RFManager::sendEvent(EventType eventType)
 {
@@ -98,6 +100,7 @@ void RFManager::sendEvent(EventType eventType)
 
     sendPacket(packet);
 }
+
 
 void RFManager::sendPacket(Packet& packet)
 {
@@ -152,6 +155,29 @@ void RFManager::processPacket(Packet& packet)
 
             const uint8_t sender =
                 packet.getSender();
+
+            Serial.print("RX ");
+
+            if (sender >= 1 && sender <= 10)
+            {
+                Serial.print("HH");
+            }
+            else if (sender >= 11 && sender <= 20)
+            {
+                Serial.print("GN");
+            }
+            else if (sender >= 21 && sender <= 30)
+            {
+                Serial.print("D");
+            }
+            else
+            {
+                Serial.print("?");
+            }
+
+            Serial.print(sender);
+            Serial.print(" Event ");
+            Serial.println(eventSequence);
 
             // Slaves nemen iedere heartbeat over.
             if (!nodeConfig.isHH())
@@ -236,6 +262,3 @@ void RFManager::activity()
         activityCallback();
     }
 }
-
-
-

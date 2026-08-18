@@ -21,6 +21,11 @@ void HeartbeatManager::send()
     {
         rf->sendHeartbeat();
     }
+
+    if (heartbeatCallback != nullptr)
+    {
+        heartbeatCallback();
+    }
 }
 
 
@@ -38,4 +43,9 @@ void HeartbeatManager::update()
 void HeartbeatManager::setRFManager(RFManager* manager)
 {
     rf = manager;
+}
+
+void HeartbeatManager::setHeartbeatCallback(HeartbeatCallback callback)
+{
+    heartbeatCallback = callback;
 }

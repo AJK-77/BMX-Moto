@@ -56,4 +56,14 @@ void Display485::onHeartbeat()
 void Display485::onHeartbeatReceived(uint16_t eventSequence)
 {
     lastHeartbeatEvent = eventSequence;
+
+    if (raceState != nullptr)
+    {
+        raceState->setEventSequence(eventSequence);
+    }
+}
+
+void Display485::setRaceState(RaceState* state)
+{
+    raceState = state;
 }
