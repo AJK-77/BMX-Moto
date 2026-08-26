@@ -6,7 +6,11 @@
 #include "Common/RaceState.h"
 
 #include "GateNode/GateNode.h"
+
 #include "Displays/485Display/485Display.h"
+
+#include "Handheld/GUI/TFT.h"
+#include "Handheld/Screens/MainScreen.h"
 
 
 class App
@@ -32,4 +36,9 @@ private:
 
     GateNode gateNode;
     Display485 display485;
+
+    TFTClass tft;
+    MainScreen mainScreen;
+
+    bool splashActive = true;
 };

@@ -2,6 +2,7 @@
 
 #include "App.h"
 #include "Common/NodeConfig.h"
+#include "Handheld/GUI/TFT.h"
 
 
 App* App::instance = nullptr;
@@ -16,6 +17,11 @@ App::App()
 void App::begin()
 {
     Serial.begin(115200);
+
+    TFT.begin();
+    TFT.showSplash();
+
+    mainScreen.begin();
 
     nodeConfig.begin();
     usb.begin();
@@ -48,6 +54,19 @@ void App::update()
     usb.update();
     heartbeat.update();
     rf.update();
+
+    if (splashActive)
+    {
+        if (tft.splashFinished())
+        {
+            splashActive = false;
+            mainScreen.draw();
+        }
+    }
+    else
+    {
+        mainScreen.update();
+    }
 
     if (nodeConfig.isGateNode())
     {

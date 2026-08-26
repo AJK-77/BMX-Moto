@@ -16,9 +16,12 @@ public:
     void onHeartbeatReceived(uint16_t eventSequence);
 
     void setRaceState(RaceState* state);
+    void sendTestFrame();
 
 private:
     LEDManager leds;
     RaceState* raceState = nullptr;
     uint16_t lastHeartbeatEvent = 0;
+
+    void sendDisplayFrame();
 };

@@ -10,7 +10,7 @@ RaceState::RaceState()
 void RaceState::reset()
 {
     eventSequence = 0;
-    raceNumber = 0;
+    raceNumber = 2136;
 }
 
 

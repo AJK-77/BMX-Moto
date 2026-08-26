@@ -1,8 +1,7 @@
-#include "Displays/485Display/485Display.h"
-
 #include <Arduino.h>
-
+#include "Displays/485Display/485Display.h"
 #include "Displays/485Display/Pins.h"
+#include "Displays/485Display/DisplayProtocol.h"
 
 Display485::Display485()
     : leds(
@@ -28,7 +27,7 @@ void Display485::begin()
     leds.green(true);
 
     Serial2.begin(
-        115200,
+        9600,
         SERIAL_8N1,
         PIN_RS485_RX,
         PIN_RS485_TX
@@ -51,6 +50,8 @@ void Display485::onRFActivity()
 void Display485::onHeartbeat()
 {
     leds.greenHeartbeat();
+
+    sendDisplayFrame();
 }
 
 void Display485::onHeartbeatReceived(uint16_t eventSequence)
@@ -66,4 +67,35 @@ void Display485::onHeartbeatReceived(uint16_t eventSequence)
 void Display485::setRaceState(RaceState* state)
 {
     raceState = state;
+}
+
+
+void Display485::sendDisplayFrame()
+{
+    if (raceState == nullptr)
+    {
+        return;
+    }
+
+    uint8_t frame[DisplayProtocol::DISPLAY_FRAME_SIZE];
+
+    DisplayProtocol::buildDisplayFrame(
+        raceState->getRaceNumber(),
+        frame
+    );
+
+    digitalWrite(PIN_RS485_DE_RE, HIGH);
+
+    delay(2);
+
+    Serial2.write(
+        frame,
+        sizeof(frame)
+    );
+
+    Serial2.flush();
+
+    delay(2);
+
+    digitalWrite(PIN_RS485_DE_RE, LOW);
 }
