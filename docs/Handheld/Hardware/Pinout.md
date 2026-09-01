@@ -105,28 +105,29 @@ Effectieve matrix : 7 × 4 (28 toetsen)
 | Down  | 4   | 1     | Definitief   |
 | Right | 5   | 0     | Definitief   |
 | OK    | 5   | 1     | Definitief   |
+| C     |     |       | Definitief   |
 | Left  | 5   | 2     | Definitief   |
 | SKR   | 6   | 0     | Definitief   |
 | Up    | 6   | 1     | Definitief   |
 | SKL   | 6   | 2     | Definitief   |
 | 2ndF  | 7   | 3     | Definitief   |
 
-| Connector Pin | Functie       |
-| :-----------: | ------------- |
-|       1       | R0            |
-|       2       | R1            |
-|       3       | R2            |
-|       4       | R3            |
-|       5       | R4            |
-|       6       | ON/OFF GND    |
-|       7       | R5            |
-|       8       | R6            |
-|       9       | C0            |
-|       10      | C1            |
-|       11      | ON/OFF C5/Key |
-|       12      | C2            |
-|       13      | 2ndF          |
-|       14      | 2ndF          |
+
+| Connector |  Pin   | Functie|
+|       1   | R0     | Matrix |
+|       2   | R1     | Matrix |
+|       3   | R2     | Matrix |
+|       4   | R3     | Matrix |
+|       5   | R4     | Matrix |
+|       6   | GND    | ON/OFF |
+|       7   | R5     | Matrix |
+|       8   | R6     | Matrix |
+|       9   | C0     | Matrix |
+|       10  | C1     | Matrix |
+|       11  | C5/Key | ON/OFF |
+|       12  | C2     | Matrix |
+|       13  | R7     | 2ndF   |
+|       14  | C3     | 2ndF   |
 
 >Opmerking: De 2ndF-toets is hardwarematig geen onderdeel van de toetsenmatrix.
 >De toets is als afzonderlijke schakelaar uitgevoerd zodat deze gelijktijdig met een matrixtoets gebruikt kan worden zonder de matrixscan te beïnvloeden.

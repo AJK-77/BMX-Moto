@@ -3,6 +3,7 @@
 #include "App.h"
 #include "Common/NodeConfig.h"
 #include "Handheld/GUI/TFT.h"
+#include "Handheld/Input/TCA8418.h"
 
 
 App* App::instance = nullptr;
@@ -19,6 +20,8 @@ void App::begin()
     Serial.begin(115200);
 
     TFT.begin();
+    tca8418.begin();
+
     TFT.showSplash();
 
     mainScreen.begin();
@@ -51,6 +54,8 @@ void App::begin()
 
 void App::update()
 {
+    
+    tca8418.update();
     usb.update();
     heartbeat.update();
     rf.update();

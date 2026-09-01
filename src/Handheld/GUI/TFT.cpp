@@ -69,15 +69,15 @@ void TFTClass::showSplash()
 
     drawLogo();
 
-    drawText(0, 105, "BMX Handheld");
-    drawText(0, 126, "Initialising...");
+    drawText(120, 125, "BMX Handheld");
+    drawText(120, 146, "Initialising...");
 
     splashStart = millis();
 }
 
 bool TFTClass::splashFinished()
 {
-    return (millis() - splashStart) >= 3000;
+    return (millis() - splashStart) >= 5000;
 }
 
 
@@ -144,5 +144,94 @@ void TFTClass::drawLogo()
                 );
             }
         }
+    }
+}
+
+void TFTClass::fillRect(
+    int16_t x,
+    int16_t y,
+    int16_t width,
+    int16_t height,
+    uint16_t color)
+{
+    tft.fillRect(
+        GuiLayout::toTftX(x),
+        GuiLayout::toTftY(y),
+        width,
+        height,
+        color
+    );
+}
+
+void TFTClass::drawBattery(
+    bool led25,
+    bool led50,
+    bool led75,
+    bool led100)
+{
+    constexpr int16_t x = 278;
+    constexpr int16_t y = GuiLayout::STATUS_Y + 3;
+
+    // ============================================================
+    // Batterij outline
+    // ============================================================
+
+    constexpr int16_t bodyWidth  = 38;
+    constexpr int16_t bodyHeight = 16;
+
+    tft.drawRect(
+        GuiLayout::toTftX(x),
+        GuiLayout::toTftY(y),
+        bodyWidth,
+        bodyHeight,
+        TFT_WHITE
+    );
+
+    // ============================================================
+    // Batterij contact
+    // ============================================================
+
+    tft.fillRect(
+        GuiLayout::toTftX(x + bodyWidth),
+        GuiLayout::toTftY(y + 5),
+        3,
+        6,
+        TFT_WHITE
+    );
+
+    // ============================================================
+    // Vier batterijsegmenten
+    // ============================================================
+
+    constexpr int16_t segmentWidth  = 5;
+    constexpr int16_t segmentHeight = 8;
+
+    constexpr int16_t segmentX   = 3;
+    constexpr int16_t segmentY   = 4;
+    constexpr int16_t segmentGap = 3;
+
+    const bool leds[4] =
+    {
+        led25,
+        led50,
+        led75,
+        led100
+    };
+
+    for (uint8_t i = 0; i < 4; i++)
+    {
+        if (!leds[i])
+            continue;
+
+        tft.fillRect(
+            GuiLayout::toTftX(
+                x + segmentX +
+                (i * (segmentWidth + segmentGap))
+            ),
+            GuiLayout::toTftY(y + segmentY),
+            segmentWidth,
+            segmentHeight,
+            TFT_WHITE
+        );
     }
 }
