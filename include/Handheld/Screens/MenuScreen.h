@@ -2,10 +2,10 @@
 
 #include "Handheld/Input/TCA8418.h"
 
-class MainScreen
+class MenuScreen
 {
 public:
-    MainScreen();
+    MenuScreen();
 
     void begin();
     void draw();
@@ -13,3 +13,5 @@ public:
 
     void onKeyEvent(const TCA8418::KeyEvent& event);
 };
+
+extern MenuScreen menuScreen;

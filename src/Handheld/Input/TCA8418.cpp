@@ -3,50 +3,49 @@
 
 #include <Wire.h>
 
-
 // ============================================================
 // TCA8418 registers
 // ============================================================
 
-constexpr uint8_t REG_CONFIG       = 0x01;
-constexpr uint8_t REG_INT_STAT     = 0x02;
-constexpr uint8_t REG_KEY_LCK_EC   = 0x03;
-constexpr uint8_t REG_KEY_EVENT_A  = 0x04;
+constexpr uint8_t REG_CONFIG           = 0x01;
+constexpr uint8_t REG_INT_STAT         = 0x02;
+constexpr uint8_t REG_KEY_LCK_EC       = 0x03;
+constexpr uint8_t REG_KEY_EVENT_A      = 0x04;
 
-constexpr uint8_t REG_GPIO_INT_EN1 = 0x1A;
-constexpr uint8_t REG_GPIO_INT_EN2 = 0x1B;
-constexpr uint8_t REG_GPIO_INT_EN3 = 0x1C;
+constexpr uint8_t REG_GPIO_INT_EN1     = 0x1A;
+constexpr uint8_t REG_GPIO_INT_EN2     = 0x1B;
+constexpr uint8_t REG_GPIO_INT_EN3     = 0x1C;
 
-constexpr uint8_t REG_KP_GPIO1     = 0x1D;
-constexpr uint8_t REG_KP_GPIO2     = 0x1E;
-constexpr uint8_t REG_KP_GPIO3     = 0x1F;
+constexpr uint8_t REG_KP_GPIO1         = 0x1D;
+constexpr uint8_t REG_KP_GPIO2         = 0x1E;
+constexpr uint8_t REG_KP_GPIO3         = 0x1F;
 
-constexpr uint8_t REG_GPI_EM1      = 0x20;
-constexpr uint8_t REG_GPI_EM2      = 0x21;
-constexpr uint8_t REG_GPI_EM3      = 0x22;
+constexpr uint8_t REG_GPI_EM1          = 0x20;
+constexpr uint8_t REG_GPI_EM2          = 0x21;
+constexpr uint8_t REG_GPI_EM3          = 0x22;
 
-constexpr uint8_t REG_GPIO_DIR1    = 0x23;
-constexpr uint8_t REG_GPIO_DIR2    = 0x24;
-constexpr uint8_t REG_GPIO_DIR3    = 0x25;
+constexpr uint8_t REG_GPIO_DIR1        = 0x23;
+constexpr uint8_t REG_GPIO_DIR2        = 0x24;
+constexpr uint8_t REG_GPIO_DIR3        = 0x25;
 
-constexpr uint8_t REG_DEBOUNCE_DIS1 = 0x29;
-constexpr uint8_t REG_DEBOUNCE_DIS2 = 0x2A;
-constexpr uint8_t REG_DEBOUNCE_DIS3 = 0x2B;
+constexpr uint8_t REG_DEBOUNCE_DIS1    = 0x29;
+constexpr uint8_t REG_DEBOUNCE_DIS2    = 0x2A;
+constexpr uint8_t REG_DEBOUNCE_DIS3    = 0x2B;
 
 
 // ============================================================
 // CONFIG bits
 // ============================================================
 
-constexpr uint8_t CONFIG_KE_IEN       = 0x01;
-constexpr uint8_t CONFIG_OVR_FLOW_IEN = 0x08;
+constexpr uint8_t CONFIG_KE_IEN        = 0x01;
+constexpr uint8_t CONFIG_OVR_FLOW_IEN  = 0x08;
 
 
 // ============================================================
 // INT_STAT bits
 // ============================================================
 
-constexpr uint8_t INT_STAT_K_INT = 0x01;
+constexpr uint8_t INT_STAT_K_INT       = 0x01;
 
 
 // ============================================================
@@ -54,6 +53,16 @@ constexpr uint8_t INT_STAT_K_INT = 0x01;
 // ============================================================
 
 TCA8418 tca8418;
+
+
+// ============================================================
+// Event callback
+// ============================================================
+
+void TCA8418::setEventCallback(EventCallback callback)
+{
+    eventCallback = callback;
+}
 
 
 // ============================================================
@@ -125,15 +134,10 @@ bool TCA8418::begin()
 
 bool TCA8418::configure()
 {
-    writeRegister(REG_KP_GPIO1, 0xFF);
-    writeRegister(REG_KP_GPIO2, 0x0F);
-    writeRegister(REG_KP_GPIO3, 0x00);
-    
     // --------------------------------------------------------
-    // R0-R7 = keypad rows
-    // C0-C3 = keypad columns
+    // R0-R7 + C0-C3 = keypad matrix
     //
-    // R7/C3 = separate 1x1 2ndF matrix position
+    // R7/C3 = 2ndF
     //
     // KP_GPIO:
     //   1 = keypad mode
@@ -151,13 +155,7 @@ bool TCA8418::configure()
 
 
     // --------------------------------------------------------
-    // C4-C9 are GPIO inputs.
-    //
-    // GPIO_DIR:
-    //   0 = input
-    //   1 = output
-    //
-    // All GPIOs are inputs for now.
+    // GPIO inputs
     // --------------------------------------------------------
 
     if (!writeRegister(REG_GPIO_DIR1, 0x00))
@@ -173,7 +171,7 @@ bool TCA8418::configure()
     // --------------------------------------------------------
     // GPIO interrupts disabled for now.
     //
-    // C5-C9 will later be read as battery/IP5306 inputs.
+    // C5-C9 will later be used for battery/IP5306 inputs.
     // --------------------------------------------------------
 
     if (!writeRegister(REG_GPIO_INT_EN1, 0x00))
@@ -187,9 +185,7 @@ bool TCA8418::configure()
 
 
     // --------------------------------------------------------
-    // C4-C9 are NOT part of the event FIFO.
-    //
-    // Only the keypad matrix generates key events for now.
+    // C4-C9 are not part of the keypad event FIFO.
     // --------------------------------------------------------
 
     if (!writeRegister(REG_GPI_EM1, 0x00))
@@ -203,7 +199,7 @@ bool TCA8418::configure()
 
 
     // --------------------------------------------------------
-    // Enable debounce for the matrix columns.
+    // Debounce enabled
     //
     // 0 = debounce enabled
     // --------------------------------------------------------
@@ -219,14 +215,15 @@ bool TCA8418::configure()
 
 
     // --------------------------------------------------------
-    // Clear any pending interrupt.
+    // Clear pending interrupt
     // --------------------------------------------------------
 
-    writeRegister(REG_INT_STAT, 0xFF);
+    if (!writeRegister(REG_INT_STAT, 0xFF))
+        return false;
 
 
     // --------------------------------------------------------
-    // Enable keypad events and FIFO overflow interrupt.
+    // Enable keypad events and FIFO overflow interrupt
     // --------------------------------------------------------
 
     if (!writeRegister(
@@ -270,7 +267,7 @@ void TCA8418::readKeyEvents()
 
 
     // --------------------------------------------------------
-    // Read number of events in FIFO
+    // Number of events in FIFO
     // --------------------------------------------------------
 
     uint8_t keyLockEventCount;
@@ -302,41 +299,48 @@ void TCA8418::readKeyEvents()
         }
 
 
+        // ----------------------------------------------------
         // Bit 7:
-        //   1 = key press
-        //   0 = key release
+        //
+        // 1 = key press
+        // 0 = key release
+        // ----------------------------------------------------
 
         bool pressed = (event & 0x80) != 0;
 
         uint8_t keyNumber = event & 0x7F;
 
 
-        // ----------------------------------------------------
-        // TCA8418 key numbering:
-        //
-        // key 1 = R0/C0
-        //
-        // With 8 rows:
-        //
-        // row = (key - 1) % 8
-        // col = (key - 1) / 8
-        // ----------------------------------------------------
-
         if (keyNumber == 0)
         {
             break;
         }
 
-        uint8_t row = keyNumber / 10;
-        uint8_t col = (keyNumber % 10) - 1;
+
+        // ----------------------------------------------------
+        // Convert physical KEY number to logical key
+        // ----------------------------------------------------
+
+        Key key = matrixToKey(keyNumber);
 
 
-        Serial.printf(
-            "TCA8418: %s  R%u C%u\n",
-            pressed ? "DOWN" : "UP",
-            row,
-            col
-        );
+        // ----------------------------------------------------
+        // Send event to application
+        // ----------------------------------------------------
+
+        if (key != Key::NONE && eventCallback != nullptr)
+        {
+            KeyEvent keyEvent;
+
+            keyEvent.key = key;
+
+            keyEvent.type =
+                pressed
+                ? EventType::DOWN
+                : EventType::UP;
+
+            eventCallback(keyEvent);
+        }
 
         eventCount--;
     }
@@ -347,4 +351,147 @@ void TCA8418::readKeyEvents()
     // --------------------------------------------------------
 
     writeRegister(REG_INT_STAT, INT_STAT_K_INT);
+}
+
+
+// ============================================================
+// KEY NUMBER -> logical key
+// ============================================================
+//
+// This is the verified working keypad mapping.
+//
+// Key numbers are the actual TCA8418 event numbers.
+// ============================================================
+
+TCA8418::Key TCA8418::matrixToKey(uint8_t keyNumber)
+{
+    switch (keyNumber)
+    {
+        case 63:
+            return Key::SKL;
+
+        case 61:
+            return Key::SKR;
+
+        case 74:
+            return Key::SECOND_F;
+
+        case 62:
+            return Key::UP;
+
+        case 52:
+            return Key::OK;    
+
+        case 42:
+            return Key::DOWN;
+
+        case 53:
+            return Key::LEFT;
+
+        case 51:
+            return Key::RIGHT;
+            
+
+        case 43:
+            return Key::ESC;
+
+        case 41:
+            return Key::C;
+
+
+        // ----------------------------------------------------
+        // Numbers
+        // ----------------------------------------------------
+
+        case 23:
+            return Key::NUM_1;
+
+        case 22:
+            return Key::NUM_2;
+
+        case 21:
+            return Key::NUM_3;
+
+        case 3:
+            return Key::NUM_4;
+
+        case 2:
+            return Key::NUM_5;
+
+        case 1:
+            return Key::NUM_6;
+
+        case 13:
+            return Key::NUM_7;
+
+        case 12:
+            return Key::NUM_8;
+
+        case 11:
+            return Key::NUM_9;
+
+        case 32:
+            return Key::NUM_0;
+
+
+        // ----------------------------------------------------
+        // Operators
+        // ----------------------------------------------------
+
+        case 33:
+            return Key::PLUS;
+
+        case 31:
+            return Key::MINUS;
+
+
+        // ----------------------------------------------------
+        // Unknown / unused
+        // ----------------------------------------------------
+
+        default:
+            return Key::NONE;
+    }
+}
+
+// ============================================================
+// Logical key -> name
+// ============================================================
+
+const char* TCA8418::keyName(Key key)
+{
+    switch (key)
+    {
+        case Key::NUM_0:     return "0";
+        case Key::NUM_1:     return "1";
+        case Key::NUM_2:     return "2";
+        case Key::NUM_3:     return "3";
+        case Key::NUM_4:     return "4";
+        case Key::NUM_5:     return "5";
+        case Key::NUM_6:     return "6";
+        case Key::NUM_7:     return "7";
+        case Key::NUM_8:     return "8";
+        case Key::NUM_9:     return "9";
+
+        case Key::PLUS:      return "+";
+        case Key::MINUS:     return "-";
+
+        case Key::C:         return "C";
+        case Key::ESC:       return "ESC";
+        case Key::OK:        return "OK";
+
+        case Key::UP:        return "UP";
+        case Key::DOWN:      return "DOWN";
+        case Key::LEFT:      return "LEFT";
+        case Key::RIGHT:     return "RIGHT";
+
+        case Key::SKL:       return "SKL";
+        case Key::SKR:       return "SKR";
+
+        case Key::SECOND_F:  return "2ndF";
+
+        case Key::NONE:
+        default:
+            return "UNKNOWN";
+    }
 }

@@ -4,6 +4,8 @@
 #include "Common/NodeConfig.h"
 #include "Handheld/GUI/TFT.h"
 #include "Handheld/Input/TCA8418.h"
+#include "Handheld/Screens/MenuScreen.h"
+
 
 
 App* App::instance = nullptr;
@@ -21,10 +23,12 @@ void App::begin()
 
     TFT.begin();
     tca8418.begin();
+    tca8418.setEventCallback(onKeyEvent);
 
     TFT.showSplash();
 
     mainScreen.begin();
+    menuScreen.begin();
 
     nodeConfig.begin();
     usb.begin();
@@ -132,5 +136,42 @@ void App::onHeartbeatReceived(uint16_t eventSequence)
     else if (nodeConfig.isDisplay())
     {
         instance->display485.onHeartbeatReceived(eventSequence);
+    }
+}
+
+
+void App::onKeyEvent(const TCA8418::KeyEvent& event)
+{
+    if (instance == nullptr)
+        return;
+
+    if (event.type != TCA8418::EventType::DOWN)
+        return;
+
+    switch (instance->activeScreen)
+    {
+        case Screen::MAIN:
+
+            if (event.key == TCA8418::Key::SKL)
+            {
+                instance->activeScreen = Screen::MENU;
+                instance->menuScreen.draw();
+                return;
+            }
+
+            instance->mainScreen.onKeyEvent(event);
+            break;
+
+        case Screen::MENU:
+
+            if (event.key == TCA8418::Key::SKL)
+            {
+                instance->activeScreen = Screen::MAIN;
+                instance->mainScreen.draw();
+                return;
+            }
+
+            instance->menuScreen.onKeyEvent(event);
+            break;
     }
 }
