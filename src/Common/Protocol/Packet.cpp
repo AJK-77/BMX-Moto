@@ -77,9 +77,15 @@ bool Packet::addHeader(
 }
 
 
-bool Packet::addHeartbeat(uint16_t eventSequence)
+bool Packet::addHeartbeat(
+    uint16_t eventSequence,
+    uint16_t raceNumber,
+    uint8_t mode
+)
 {
-    return addUInt16(eventSequence);
+    return addUInt16(eventSequence) &&
+           addUInt16(raceNumber) &&
+           addByte(mode);
 }
 
 
@@ -148,6 +154,30 @@ uint16_t Packet::getEventSequence() const
            (static_cast<uint16_t>(data[5]) << 8);
 }
 
+uint16_t Packet::getHeartbeatRaceNumber() const
+{
+    // Header       = 4 bytes
+    // EventSequence = 2 bytes
+    // RaceNumber    = bytes 6 + 7
+
+    if (length < 8)
+    {
+        return 0;
+    }
+
+    return static_cast<uint16_t>(data[6]) |
+           (static_cast<uint16_t>(data[7]) << 8);
+}
+
+uint8_t Packet::getHeartbeatMode() const
+{
+    if (length < 9)
+    {
+        return 0;
+    }
+
+    return data[8];
+}
 
 EventType Packet::getEventType() const
 {

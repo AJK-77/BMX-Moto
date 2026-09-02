@@ -3,9 +3,6 @@
 #include "GateNode/GateNode.h"
 #include "GateNode/Pins.h"
 
-
-
-
 GateNode::GateNode()
     : leds(
         PIN_LED_RED,
@@ -17,7 +14,6 @@ GateNode::GateNode()
       lastGateInput(true)
 {
 }
-
 
 void GateNode::begin()
 {
@@ -32,7 +28,6 @@ void GateNode::begin()
     leds.green(true);
 }
 
-
 void GateNode::update()
 {
     leds.update();
@@ -41,20 +36,20 @@ void GateNode::update()
 
     // GateDrop = HIGH -> LOW
     if (lastGateInput == HIGH && gateInput == LOW)
-{
-    if (millis() - lastGateDrop >= 10000)
     {
-        lastGateDrop = millis();
-
-        gateState = true;
-        leds.yellow(true);
-
-        if (rf != nullptr)
+        if (millis() - lastGateDrop >= 10000)
         {
-            rf->sendEvent(EventType::GateDrop);
+            lastGateDrop = millis();
+
+            gateState = true;
+            leds.yellow(true);
+
+            if (rf != nullptr)
+            {
+                rf->sendEvent(EventType::GateDrop);
+            }
         }
     }
-}
 
     // Input terug naar ruststand
     if (lastGateInput == LOW && gateInput == HIGH)
@@ -66,27 +61,14 @@ void GateNode::update()
     lastGateInput = gateInput;
 }
 
-
 void GateNode::onRFActivity()
 {
     leds.blueFlash();
 }
 
-
 void GateNode::onHeartbeat()
 {
     leds.greenHeartbeat();
-}
-
-
-void GateNode::onHeartbeatReceived(uint16_t eventSequence)
-{
-    lastHeartbeatEvent = eventSequence;
-
-    if (raceState != nullptr)
-    {
-        raceState->setEventSequence(eventSequence);
-    }
 }
 
 void GateNode::setRFManager(RFManager* manager)

@@ -11,7 +11,9 @@
 bool RFProtocol::createHeartbeat(
     Packet& packet,
     uint8_t sender,
-    uint16_t eventSequence
+    uint16_t eventSequence,
+    uint16_t raceNumber,
+    RaceMode mode
 )
 {
     packet.clear();
@@ -24,7 +26,10 @@ bool RFProtocol::createHeartbeat(
         return false;
     }
 
-    if (!packet.addHeartbeat(eventSequence))
+    if (!packet.addHeartbeat(
+            eventSequence,
+            raceNumber,
+            static_cast<uint8_t>(mode)))
     {
         return false;
     }

@@ -9,6 +9,7 @@
 
 #include "Common/Protocol/Packet.h"
 #include "Common/Protocol/EventType.h"
+#include "Common/RaceState.h"
 
 // ============================================================
 // RF Protocol
@@ -23,8 +24,10 @@ public:
     static bool createHeartbeat(
         Packet& packet,
         uint8_t sender,
-        uint16_t eventSequence
-    );
+        uint16_t eventSequence,
+        uint16_t raceNumber,
+        RaceMode mode
+);
 
     // --------------------------------------------------------
     // Event

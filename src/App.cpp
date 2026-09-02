@@ -7,7 +7,6 @@
 #include "Handheld/Screens/MenuScreen.h"
 
 
-
 App* App::instance = nullptr;
 
 
@@ -21,26 +20,25 @@ void App::begin()
 {
     Serial.begin(115200);
 
-    TFT.begin();
-    tca8418.begin();
-    tca8418.setEventCallback(onKeyEvent);
-
-    TFT.showSplash();
-
-    mainScreen.begin();
-    menuScreen.begin();
+    // ---------------------------------------------------------
+    // Common
+    // ---------------------------------------------------------
 
     nodeConfig.begin();
     usb.begin();
 
     rf.setRaceState(&raceState);
     rf.setActivityCallback(onRFActivity);
-    rf.setHeartbeatRxCallback(onHeartbeatReceived);
     rf.begin();
 
     heartbeat.setRFManager(&rf);
     heartbeat.setHeartbeatCallback(onHeartbeat);
     heartbeat.begin();
+
+
+    // ---------------------------------------------------------
+    // GateNode
+    // ---------------------------------------------------------
 
     if (nodeConfig.isGateNode())
     {
@@ -48,42 +46,93 @@ void App::begin()
         gateNode.setRaceState(&raceState);
         gateNode.begin();
     }
-    else if (nodeConfig.isDisplay())
+
+
+    // ---------------------------------------------------------
+    // Display
+    // ---------------------------------------------------------
+
+    if (nodeConfig.isDisplay())
     {
-    display485.setRaceState(&raceState);
-    display485.begin();
+        display485.setRaceState(&raceState);
+        display485.begin();
+    }
+
+
+    // ---------------------------------------------------------
+    // HandHeld
+    // ---------------------------------------------------------
+
+    if (nodeConfig.isHH())
+    {
+        TFT.begin();
+
+        tca8418.begin();
+        tca8418.setEventCallback(onKeyEvent);
+
+        TFT.showSplash();
+
+        mainScreen.begin();
+        menuScreen.begin();
+        mainScreen.setRaceState(&raceState);
+
+        splashActive = true;
+        activeScreen = Screen::MAIN;
     }
 }
 
 
 void App::update()
 {
-    
-    tca8418.update();
+    // ---------------------------------------------------------
+    // Common
+    // ---------------------------------------------------------
+
     usb.update();
     heartbeat.update();
     rf.update();
 
-    if (splashActive)
-    {
-        if (tft.splashFinished())
-        {
-            splashActive = false;
-            mainScreen.draw();
-        }
-    }
-    else
-    {
-        mainScreen.update();
-    }
+
+    // ---------------------------------------------------------
+    // GateNode
+    // ---------------------------------------------------------
 
     if (nodeConfig.isGateNode())
     {
         gateNode.update();
     }
-    else if (nodeConfig.isDisplay())
+
+
+    // ---------------------------------------------------------
+    // Display
+    // ---------------------------------------------------------
+
+    if (nodeConfig.isDisplay())
     {
         display485.update();
+    }
+
+
+    // ---------------------------------------------------------
+    // HandHeld
+    // ---------------------------------------------------------
+
+    if (nodeConfig.isHH())
+    {
+        tca8418.update();
+
+        if (splashActive)
+        {
+            if (TFT.splashFinished())
+            {
+                splashActive = false;
+                mainScreen.draw();
+            }
+        }
+        else
+        {
+            mainScreen.update();
+        }
     }
 }
 
@@ -95,15 +144,27 @@ void App::onRFActivity()
         return;
     }
 
+
+    // ---------------------------------------------------------
+    // GateNode
+    // ---------------------------------------------------------
+
     if (nodeConfig.isGateNode())
     {
         instance->gateNode.onRFActivity();
     }
-    else if (nodeConfig.isDisplay())
+
+
+    // ---------------------------------------------------------
+    // Display
+    // ---------------------------------------------------------
+
+    if (nodeConfig.isDisplay())
     {
         instance->display485.onRFActivity();
     }
 }
+
 
 void App::onHeartbeat()
 {
@@ -112,30 +173,24 @@ void App::onHeartbeat()
         return;
     }
 
+
+    // ---------------------------------------------------------
+    // GateNode
+    // ---------------------------------------------------------
+
     if (nodeConfig.isGateNode())
     {
         instance->gateNode.onHeartbeat();
     }
-    else if (nodeConfig.isDisplay())
+
+
+    // ---------------------------------------------------------
+    // Display
+    // ---------------------------------------------------------
+
+    if (nodeConfig.isDisplay())
     {
         instance->display485.onHeartbeat();
-    }
-}
-
-void App::onHeartbeatReceived(uint16_t eventSequence)
-{
-    if (instance == nullptr)
-    {
-        return;
-    }
-
-    if (nodeConfig.isGateNode())
-    {
-        instance->gateNode.onHeartbeatReceived(eventSequence);
-    }
-    else if (nodeConfig.isDisplay())
-    {
-        instance->display485.onHeartbeatReceived(eventSequence);
     }
 }
 
@@ -143,35 +198,48 @@ void App::onHeartbeatReceived(uint16_t eventSequence)
 void App::onKeyEvent(const TCA8418::KeyEvent& event)
 {
     if (instance == nullptr)
+    {
         return;
+    }
 
     if (event.type != TCA8418::EventType::DOWN)
-        return;
-
-    switch (instance->activeScreen)
     {
-        case Screen::MAIN:
+        return;
+    }
 
-            if (event.key == TCA8418::Key::SKL)
-            {
-                instance->activeScreen = Screen::MENU;
-                instance->menuScreen.draw();
-                return;
-            }
 
-            instance->mainScreen.onKeyEvent(event);
-            break;
+    // ---------------------------------------------------------
+    // Main screen
+    // ---------------------------------------------------------
 
-        case Screen::MENU:
+    if (instance->activeScreen == Screen::MAIN)
+    {
+        if (event.key == TCA8418::Key::SKL)
+        {
+            instance->activeScreen = Screen::MENU;
+            instance->menuScreen.draw();
+            return;
+        }
 
-            if (event.key == TCA8418::Key::SKL)
-            {
-                instance->activeScreen = Screen::MAIN;
-                instance->mainScreen.draw();
-                return;
-            }
+        instance->mainScreen.onKeyEvent(event);
+        return;
+    }
 
-            instance->menuScreen.onKeyEvent(event);
-            break;
+
+    // ---------------------------------------------------------
+    // Menu screen
+    // ---------------------------------------------------------
+
+    if (instance->activeScreen == Screen::MENU)
+    {
+        if (event.key == TCA8418::Key::SKL)
+        {
+            instance->activeScreen = Screen::MAIN;
+            instance->mainScreen.draw();
+            return;
+        }
+
+        instance->menuScreen.onKeyEvent(event);
+        return;
     }
 }

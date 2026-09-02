@@ -6,7 +6,6 @@
 #include "Common/RF/RFManager.h"
 #include "Common/RaceState.h"
 
-
 class GateNode
 {
 public:
@@ -17,7 +16,7 @@ public:
 
     void onRFActivity();
     void onHeartbeat();
-    void onHeartbeatReceived(uint16_t eventSequence);
+
     void setRFManager(RFManager* manager);
     void setRaceState(RaceState* state);
 
@@ -29,8 +28,6 @@ private:
 
     RFManager* rf = nullptr;
     RaceState* raceState = nullptr;
-
-    uint16_t lastHeartbeatEvent = 0;
 
     unsigned long lastGateDrop = 0;
 };

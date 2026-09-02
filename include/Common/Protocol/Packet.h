@@ -31,7 +31,11 @@ public:
         MessageType messageType
     );
 
-    bool addHeartbeat(uint16_t eventSequence);
+    bool addHeartbeat(
+    uint16_t eventSequence,
+    uint16_t raceNumber,
+    uint8_t mode
+);
 
     bool addCRC();
 
@@ -43,6 +47,9 @@ public:
     MessageType getMessageType() const;
 
     uint16_t getEventSequence() const;
+    uint16_t getHeartbeatRaceNumber() const;
+    uint8_t getHeartbeatMode() const;
+
     EventType getEventType() const;
     uint16_t getRaceNumber() const;
 

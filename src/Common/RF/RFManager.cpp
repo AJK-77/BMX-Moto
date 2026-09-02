@@ -63,7 +63,9 @@ void RFManager::sendHeartbeat()
     if (!RFProtocol::createHeartbeat(
             packet,
             nodeConfig.getNodeAddress(),
-            raceState->getEventSequence()))
+            raceState->getEventSequence(),
+            raceState->getRaceNumber(),
+            raceState->getMode()))
     {
         return;
     }
@@ -106,14 +108,18 @@ void RFManager::sendPacket(Packet& packet)
 {
     uint8_t broadcastAddress[] =
     {
-        0xFF, 0xFF, 0xFF,
-        0xFF, 0xFF, 0xFF
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF
     };
 
     if (espNow.send(
-        broadcastAddress,
-        packet.getData(),
-        packet.getLength()))
+            broadcastAddress,
+            packet.getData(),
+            packet.getLength()))
     {
         activity();
     }
@@ -123,13 +129,6 @@ void RFManager::sendPacket(Packet& packet)
 void RFManager::setActivityCallback(ActivityCallback callback)
 {
     activityCallback = callback;
-}
-
-
-void RFManager::setHeartbeatRxCallback(
-    HeartbeatRxCallback callback)
-{
-    heartbeatRxCallback = callback;
 }
 
 
@@ -146,15 +145,27 @@ void RFManager::processPacket(Packet& packet)
         return;
     }
 
+
     switch (packet.getMessageType())
     {
+        // -----------------------------------------------------
+        // Heartbeat / complete state
+        // -----------------------------------------------------
+
         case MessageType::Heartbeat:
         {
             const uint16_t eventSequence =
                 packet.getEventSequence();
 
+            const uint16_t raceNumber =
+                packet.getHeartbeatRaceNumber();
+
+            const uint8_t modeValue =
+                packet.getHeartbeatMode();
+
             const uint8_t sender =
                 packet.getSender();
+
 
             Serial.print("RX ");
 
@@ -176,39 +187,75 @@ void RFManager::processPacket(Packet& packet)
             }
 
             Serial.print(sender);
+
             Serial.print(" Event ");
-            Serial.println(eventSequence);
+            Serial.print(eventSequence);
 
-            // Slaves nemen iedere heartbeat over.
-            if (!nodeConfig.isHH())
+            Serial.print(" Race ");
+            Serial.print(raceNumber);
+
+            Serial.print(" Mode ");
+
+            if (modeValue == static_cast<uint8_t>(RaceMode::AUTO))
             {
-                if (raceState != nullptr)
-                {
-                    raceState->setEventSequence(eventSequence);
-                }
+                Serial.println("AUTO");
             }
-            // HH neemt alleen de eerste heartbeat van een andere node over.
-            else if (firstHeartbeat &&
-                     sender != nodeConfig.getNodeAddress())
+            else
             {
-                if (raceState != nullptr)
-                {
-                    raceState->setEventSequence(eventSequence);
-                }
-
-                firstHeartbeat = false;
-
-                Serial.print("RF: First heartbeat accepted, event ");
-                Serial.println(eventSequence);
+                Serial.println("MANUAL");
             }
 
-            if (heartbeatRxCallback != nullptr)
+
+            // -------------------------------------------------
+            // Validate received mode
+            // -------------------------------------------------
+
+            if (modeValue != static_cast<uint8_t>(RaceMode::MANUAL) &&
+                modeValue != static_cast<uint8_t>(RaceMode::AUTO))
             {
-                heartbeatRxCallback(eventSequence);
+                Serial.println("RF: Invalid mode");
+                break;
+            }
+
+
+            RaceMode receivedMode =
+                static_cast<RaceMode>(modeValue);
+
+
+            // -------------------------------------------------
+            // Apply complete state when newer
+            //
+            // This applies to every node:
+            // HH, GateNode and Display.
+            //
+            // Event sequence determines freshness.
+            // -------------------------------------------------
+
+            if (raceState != nullptr)
+            {
+                if (raceState->applyState(
+                        eventSequence,
+                        raceNumber,
+                        receivedMode))
+                {
+                    Serial.print("RF: State accepted, event ");
+                    Serial.println(eventSequence);
+                }
+                else
+                {
+                    Serial.print("RF: State ignored, local event ");
+                    Serial.println(
+                        raceState->getEventSequence());
+                }
             }
 
             break;
         }
+
+
+        // -----------------------------------------------------
+        // Event
+        // -----------------------------------------------------
 
         case MessageType::Event:
         {
@@ -229,6 +276,7 @@ void RFManager::processPacket(Packet& packet)
                     break;
                 }
 
+
                 default:
                 {
                     Serial.print("Unknown event");
@@ -242,10 +290,16 @@ void RFManager::processPacket(Packet& packet)
             break;
         }
 
+
+        // -----------------------------------------------------
+        // Status
+        // -----------------------------------------------------
+
         case MessageType::Status:
         {
             break;
         }
+
 
         default:
         {
