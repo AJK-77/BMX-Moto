@@ -6,17 +6,14 @@
 #include "Common/NodeConfig.h"
 #include "Common/Protocol/RFProtocol.h"
 
-
 RFManager::RFManager()
 {
 }
-
 
 bool RFManager::begin()
 {
     return espNow.begin();
 }
-
 
 void RFManager::update()
 {
@@ -45,11 +42,9 @@ void RFManager::update()
     processPacket(packet);
 }
 
-
 void RFManager::send()
 {
 }
-
 
 void RFManager::sendHeartbeat()
 {
@@ -75,7 +70,6 @@ void RFManager::sendHeartbeat()
 
     sendPacket(packet);
 }
-
 
 void RFManager::sendEvent(EventType eventType)
 {
@@ -103,17 +97,12 @@ void RFManager::sendEvent(EventType eventType)
     sendPacket(packet);
 }
 
-
 void RFManager::sendPacket(Packet& packet)
 {
     uint8_t broadcastAddress[] =
     {
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF
+        0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF
     };
 
     if (espNow.send(
@@ -125,18 +114,20 @@ void RFManager::sendPacket(Packet& packet)
     }
 }
 
-
 void RFManager::setActivityCallback(ActivityCallback callback)
 {
     activityCallback = callback;
 }
 
+void RFManager::setStateChangeCallback(StateChangeCallback callback)
+{
+    stateChangeCallback = callback;
+}
 
 void RFManager::setRaceState(RaceState* state)
 {
     raceState = state;
 }
-
 
 void RFManager::processPacket(Packet& packet)
 {
@@ -145,12 +136,11 @@ void RFManager::processPacket(Packet& packet)
         return;
     }
 
-
     switch (packet.getMessageType())
     {
-        // -----------------------------------------------------
-        // Heartbeat / complete state
-        // -----------------------------------------------------
+        // ========================================================
+        // Heartbeat
+        // ========================================================
 
         case MessageType::Heartbeat:
         {
@@ -165,7 +155,6 @@ void RFManager::processPacket(Packet& packet)
 
             const uint8_t sender =
                 packet.getSender();
-
 
             Serial.print("RX ");
 
@@ -205,11 +194,6 @@ void RFManager::processPacket(Packet& packet)
                 Serial.println("MANUAL");
             }
 
-
-            // -------------------------------------------------
-            // Validate received mode
-            // -------------------------------------------------
-
             if (modeValue != static_cast<uint8_t>(RaceMode::MANUAL) &&
                 modeValue != static_cast<uint8_t>(RaceMode::AUTO))
             {
@@ -217,19 +201,8 @@ void RFManager::processPacket(Packet& packet)
                 break;
             }
 
-
             RaceMode receivedMode =
                 static_cast<RaceMode>(modeValue);
-
-
-            // -------------------------------------------------
-            // Apply complete state when newer
-            //
-            // This applies to every node:
-            // HH, GateNode and Display.
-            //
-            // Event sequence determines freshness.
-            // -------------------------------------------------
 
             if (raceState != nullptr)
             {
@@ -252,10 +225,9 @@ void RFManager::processPacket(Packet& packet)
             break;
         }
 
-
-        // -----------------------------------------------------
+        // ========================================================
         // Event
-        // -----------------------------------------------------
+        // ========================================================
 
         case MessageType::Event:
         {
@@ -267,15 +239,41 @@ void RFManager::processPacket(Packet& packet)
                 {
                     Serial.print("GateDrop");
 
+                    // Alleen de HH verwerkt de GateDrop
+                    // als race-event.
+                    //
+                    // In MANUAL verandert de race niet.
                     if (raceState != nullptr &&
                         nodeConfig.isHH())
                     {
-                        raceState->gateDrop();
+                        if (raceState->getMode() == RaceMode::AUTO)
+                        {
+                            raceState->gateDrop();
+
+                            Serial.print(
+                                " -> AUTO, race "
+                            );
+                            Serial.print(
+                                raceState->getRaceNumber()
+                            );
+
+                            // RaceState is lokaal gewijzigd.
+                            // App zorgt voor direct scherm + RF.
+                            if (stateChangeCallback != nullptr)
+                            {
+                                stateChangeCallback();
+                            }
+                        }
+                        else
+                        {
+                            Serial.print(
+                                " -> MANUAL, ignored"
+                            );
+                        }
                     }
 
                     break;
                 }
-
 
                 default:
                 {
@@ -290,16 +288,14 @@ void RFManager::processPacket(Packet& packet)
             break;
         }
 
-
-        // -----------------------------------------------------
+        // ========================================================
         // Status
-        // -----------------------------------------------------
+        // ========================================================
 
         case MessageType::Status:
         {
             break;
         }
-
 
         default:
         {
@@ -307,7 +303,6 @@ void RFManager::processPacket(Packet& packet)
         }
     }
 }
-
 
 void RFManager::activity()
 {

@@ -7,11 +7,11 @@
 #include "Common/Protocol/EventType.h"
 #include "Common/RaceState.h"
 
-
 class RFManager
 {
 public:
     using ActivityCallback = void (*)(void);
+    using StateChangeCallback = void (*)(void);
 
     RFManager();
 
@@ -23,6 +23,7 @@ public:
     void sendEvent(EventType eventType);
 
     void setActivityCallback(ActivityCallback callback);
+    void setStateChangeCallback(StateChangeCallback callback);
     void setRaceState(RaceState* state);
 
 private:
@@ -33,5 +34,7 @@ private:
     ESPNowDriver espNow;
 
     ActivityCallback activityCallback = nullptr;
+    StateChangeCallback stateChangeCallback = nullptr;
+
     RaceState* raceState = nullptr;
 };

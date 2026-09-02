@@ -4,22 +4,23 @@
 #include "Handheld/GUI/GuiLayout.h"
 #include "Handheld/Screens/MainScreen.h"
 
-
 MainScreen::MainScreen()
 {
 }
 
-
 void MainScreen::begin()
 {
 }
-
 
 void MainScreen::setRaceState(RaceState* state)
 {
     raceState = state;
 }
 
+void MainScreen::setStateChangeCallback(StateChangeCallback callback)
+{
+    stateChangeCallback = callback;
+}
 
 void MainScreen::draw()
 {
@@ -64,11 +65,9 @@ void MainScreen::draw()
     TFT.drawBattery(true, true, true, true);
 }
 
-
 void MainScreen::update()
 {
 }
-
 
 void MainScreen::onKeyEvent(const TCA8418::KeyEvent& event)
 {
@@ -87,12 +86,10 @@ void MainScreen::onKeyEvent(const TCA8418::KeyEvent& event)
         return;
     }
 
-
-    // ---------------------------------------------------------
+    // ============================================================
     // +
-    // Increase moto.
-    // Works in both MANUAL and AUTO.
-    // ---------------------------------------------------------
+    // Werkt in MANUAL en AUTO
+    // ============================================================
 
     if (event.key == TCA8418::Key::PLUS)
     {
@@ -115,15 +112,19 @@ void MainScreen::onKeyEvent(const TCA8418::KeyEvent& event)
         raceState->nextEvent();
 
         draw();
+
+        if (stateChangeCallback != nullptr)
+        {
+            stateChangeCallback();
+        }
+
         return;
     }
 
-
-    // ---------------------------------------------------------
+    // ============================================================
     // -
-    // Decrease moto.
-    // Works in both MANUAL and AUTO.
-    // ---------------------------------------------------------
+    // Werkt in MANUAL en AUTO
+    // ============================================================
 
     if (event.key == TCA8418::Key::MINUS)
     {
@@ -148,14 +149,19 @@ void MainScreen::onKeyEvent(const TCA8418::KeyEvent& event)
         raceState->nextEvent();
 
         draw();
+
+        if (stateChangeCallback != nullptr)
+        {
+            stateChangeCallback();
+        }
+
         return;
     }
 
-
-    // ---------------------------------------------------------
+    // ============================================================
     // SKR
-    // Toggle MANUAL / AUTO.
-    // ---------------------------------------------------------
+    // MANUAL <-> AUTO
+    // ============================================================
 
     if (event.key == TCA8418::Key::SKR)
     {
@@ -171,6 +177,12 @@ void MainScreen::onKeyEvent(const TCA8418::KeyEvent& event)
         raceState->nextEvent();
 
         draw();
+
+        if (stateChangeCallback != nullptr)
+        {
+            stateChangeCallback();
+        }
+
         return;
     }
 }

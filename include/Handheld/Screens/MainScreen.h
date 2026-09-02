@@ -6,16 +6,20 @@
 class MainScreen
 {
 public:
+    using StateChangeCallback = void (*)(void);
+
     MainScreen();
 
     void begin();
     void draw();
     void update();
 
-    void onKeyEvent(const TCA8418::KeyEvent& event);
-
     void setRaceState(RaceState* state);
+    void setStateChangeCallback(StateChangeCallback callback);
+
+    void onKeyEvent(const TCA8418::KeyEvent& event);
 
 private:
     RaceState* raceState = nullptr;
+    StateChangeCallback stateChangeCallback = nullptr;
 };

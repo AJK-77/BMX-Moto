@@ -11,7 +11,6 @@
 
 #include "Handheld/GUI/TFT.h"
 #include "Handheld/Screens/MainScreen.h"
-#include "Handheld/Screens/MenuScreen.h"
 #include "Handheld/Input/TCA8418.h"
 
 enum class Screen
@@ -29,11 +28,15 @@ public:
     void update();
 
 private:
+    static App* instance;
+
     static void onRFActivity();
     static void onHeartbeat();
-    static void onKeyEvent(const TCA8418::KeyEvent& event);
+    static void onKeyEvent(
+        const TCA8418::KeyEvent& event
+    );
 
-    static App* instance;
+    static void onStateChanged();
 
     RaceState raceState;
 
@@ -46,9 +49,7 @@ private:
 
     TFTClass tft;
     MainScreen mainScreen;
-    MenuScreen menuScreen;
 
     bool splashActive = true;
     Screen activeScreen = Screen::MAIN;
-    bool autoMode = false;
 };
