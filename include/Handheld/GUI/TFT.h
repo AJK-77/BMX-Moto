@@ -12,6 +12,8 @@ public:
     void update();
 
     void drawText(int16_t x, int16_t y, const char *text, uint8_t size = 1);
+    void drawTextInverted(int16_t x, int16_t y, const char *text, uint8_t size = 1);
+
     void drawLogo();
 
     void showSplash();

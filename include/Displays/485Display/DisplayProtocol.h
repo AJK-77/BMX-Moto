@@ -21,7 +21,7 @@ namespace DisplayProtocol
     constexpr size_t DISPLAY_FRAME_SIZE = 13;
 
     void buildDisplayFrame(
-        uint16_t raceNumber,
+        const char* raceNumber,
         uint8_t* frame
     );
 }

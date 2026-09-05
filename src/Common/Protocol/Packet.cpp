@@ -9,6 +9,11 @@ Packet::Packet()
     clear();
 }
 
+
+// ============================================================
+// Basic packet handling
+// ============================================================
+
 bool Packet::load(const uint8_t* source, uint16_t sourceLength)
 {
     if (source == nullptr)
@@ -31,11 +36,16 @@ bool Packet::load(const uint8_t* source, uint16_t sourceLength)
     return true;
 }
 
+
 void Packet::clear()
 {
     length = 0;
 }
 
+
+// ============================================================
+// Data adding
+// ============================================================
 
 bool Packet::addByte(uint8_t value)
 {
@@ -64,6 +74,10 @@ bool Packet::addUInt16(uint16_t value)
 }
 
 
+// ============================================================
+// Header
+// ============================================================
+
 bool Packet::addHeader(
     uint8_t sender,
     uint8_t receiver,
@@ -77,17 +91,70 @@ bool Packet::addHeader(
 }
 
 
+// ============================================================
+// Heartbeat
+// ============================================================
+
 bool Packet::addHeartbeat(
     uint16_t eventSequence,
-    uint16_t raceNumber,
+    const char* raceNumber,
     uint8_t mode
 )
 {
-    return addUInt16(eventSequence) &&
-           addUInt16(raceNumber) &&
-           addByte(mode);
+    if (raceNumber == nullptr)
+    {
+        return false;
+    }
+
+    // RaceState is always exactly four characters.
+    // Allowed characters are 0-9 and space.
+    for (uint8_t i = 0; i < 4; i++)
+    {
+        const char c = raceNumber[i];
+
+        if (!((c >= '0' && c <= '9') || c == ' '))
+        {
+            return false;
+        }
+    }
+
+    if (raceNumber[4] != '\0')
+    {
+        return false;
+    }
+
+    if (!addUInt16(eventSequence))
+    {
+        return false;
+    }
+
+    if (!addByte(static_cast<uint8_t>(raceNumber[0])) ||
+        !addByte(static_cast<uint8_t>(raceNumber[1])) ||
+        !addByte(static_cast<uint8_t>(raceNumber[2])) ||
+        !addByte(static_cast<uint8_t>(raceNumber[3])))
+    {
+        return false;
+    }
+
+    return addByte(mode);
 }
 
+
+// ============================================================
+// Event
+// ============================================================
+
+bool Packet::addEvent(
+    EventType eventType
+)
+{
+    return addByte(static_cast<uint8_t>(eventType));
+}
+
+
+// ============================================================
+// CRC
+// ============================================================
 
 bool Packet::addCRC()
 {
@@ -101,6 +168,10 @@ bool Packet::addCRC()
     return addUInt16(crc);
 }
 
+
+// ============================================================
+// Basic packet information
+// ============================================================
 
 uint16_t Packet::getLength() const
 {
@@ -140,10 +211,15 @@ MessageType Packet::getMessageType() const
     return static_cast<MessageType>(data[3]);
 }
 
+
+// ============================================================
+// Heartbeat
+// ============================================================
+
 uint16_t Packet::getEventSequence() const
 {
-    // Header = 4 bytes
-    // Event sequence = bytes 4 + 5
+    // Header       = 4 bytes
+    // EventSequence = bytes 4 + 5
 
     if (length < 6)
     {
@@ -154,62 +230,68 @@ uint16_t Packet::getEventSequence() const
            (static_cast<uint16_t>(data[5]) << 8);
 }
 
-uint16_t Packet::getHeartbeatRaceNumber() const
-{
-    // Header       = 4 bytes
-    // EventSequence = 2 bytes
-    // RaceNumber    = bytes 6 + 7
 
-    if (length < 8)
+const char* Packet::getHeartbeatRaceNumber() const
+{
+    // Header        = 4 bytes
+    // EventSequence = 2 bytes
+    // RaceNumber    = bytes 6..9
+
+    static char raceNumber[5];
+
+    if (length < 10)
     {
-        return 0;
+        raceNumber[0] = '\0';
+        return raceNumber;
     }
 
-    return static_cast<uint16_t>(data[6]) |
-           (static_cast<uint16_t>(data[7]) << 8);
+    raceNumber[0] = static_cast<char>(data[6]);
+    raceNumber[1] = static_cast<char>(data[7]);
+    raceNumber[2] = static_cast<char>(data[8]);
+    raceNumber[3] = static_cast<char>(data[9]);
+    raceNumber[4] = '\0';
+
+    return raceNumber;
 }
+
 
 uint8_t Packet::getHeartbeatMode() const
 {
-    if (length < 9)
+    // Header        = 4 bytes
+    // EventSequence = 2 bytes
+    // RaceNumber    = 4 bytes
+    // Mode          = byte 10
+
+    if (length < 11)
     {
         return 0;
     }
 
-    return data[8];
+    return data[10];
 }
+
+
+// ============================================================
+// Event
+// ============================================================
 
 EventType Packet::getEventType() const
 {
-    // Header = 4 bytes
-    // Event sequence = 2 bytes
-    // Event type = byte 6
+    // Header    = 4 bytes
+    // EventType = byte 4
 
-    if (length < 7)
+    if (length < 5)
     {
         return static_cast<EventType>(0);
     }
 
-    return static_cast<EventType>(data[6]);
+    return static_cast<EventType>(data[4]);
 }
 
 
-uint16_t Packet::getRaceNumber() const
-{
-    // Header       = 4 bytes
-    // EventSequence = 2 bytes
-    // EventType     = 1 byte
-    // RaceNumber    = bytes 7 + 8
-
-    if (length < 9)
-    {
-        return 0;
-    }
-
-    return static_cast<uint16_t>(data[7]) |
-           (static_cast<uint16_t>(data[8]) << 8);
-}
-
+// ============================================================
+// Raw packet data
+// ============================================================
 
 uint8_t* Packet::getData()
 {

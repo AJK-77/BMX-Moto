@@ -4,18 +4,30 @@ namespace DisplayProtocol
 {
 
 void buildDisplayFrame(
-    uint16_t raceNumber,
+    const char* raceNumber,
     uint8_t* frame
 )
 {
+    if (raceNumber == nullptr || frame == nullptr)
+        return;
+
+    // RaceState is altijd exact 4 tekens:
+    // [MANCHE][MOTO honderden][MOTO tientallen][MOTO eenheden]
+
     const uint8_t manche =
-        raceNumber / 1000;
+        (raceNumber[0] >= '0' && raceNumber[0] <= '9')
+        ? static_cast<uint8_t>(raceNumber[0] - '0')
+        : 0;
 
     const uint8_t tens =
-        (raceNumber / 10) % 10;
+        (raceNumber[2] >= '0' && raceNumber[2] <= '9')
+        ? static_cast<uint8_t>(raceNumber[2] - '0')
+        : 0;
 
     const uint8_t ones =
-        raceNumber % 10;
+        (raceNumber[3] >= '0' && raceNumber[3] <= '9')
+        ? static_cast<uint8_t>(raceNumber[3] - '0')
+        : 0;
 
     const uint8_t mancheByte =
         MANCHE_BASE + manche;

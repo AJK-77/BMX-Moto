@@ -3,7 +3,6 @@
 #include "Handheld/GUI/GuiLayout.h"
 #include "Handheld/GUI/Assets/RapidWheelsLogo.h"
 
-
 // Display layout.
 // Het fysieke TFT is 320x240.
 // De bovenste en onderste 20 pixels vallen buiten het zichtbare venster.
@@ -61,6 +60,39 @@ void TFTClass::drawText(
     );
 
     tft.print(text);
+}
+
+void TFTClass::drawTextInverted(
+    int16_t x,
+    int16_t y,
+    const char *text,
+    uint8_t size)
+{
+    tft.setTextSize(size);
+
+    int16_t textX = GuiLayout::textX(x);
+    int16_t textY = GuiLayout::toTftY(y);
+
+    int16_t textWidth = tft.textWidth(text);
+    int16_t textHeight = tft.fontHeight();
+
+    constexpr int16_t paddingX = 2;
+    constexpr int16_t paddingY = -2;
+
+    tft.fillRect(
+        textX - paddingX,
+        textY - paddingY,
+        textWidth + (paddingX * 2),
+        textHeight + (paddingY * 2),
+        TFT_WHITE
+    );
+
+    // Alleen de letters tekenen.
+    tft.setTextColor(TFT_BLACK);
+    tft.setCursor(textX, textY);
+    tft.print(text);
+
+    tft.setTextColor(TFT_WHITE, TFT_BLACK);
 }
 
 void TFTClass::showSplash()

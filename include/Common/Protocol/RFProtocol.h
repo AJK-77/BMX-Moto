@@ -11,6 +11,7 @@
 #include "Common/Protocol/EventType.h"
 #include "Common/RaceState.h"
 
+
 // ============================================================
 // RF Protocol
 // ============================================================
@@ -18,6 +19,7 @@
 class RFProtocol
 {
 public:
+
     // --------------------------------------------------------
     // Heartbeat
     // --------------------------------------------------------
@@ -25,9 +27,9 @@ public:
         Packet& packet,
         uint8_t sender,
         uint16_t eventSequence,
-        uint16_t raceNumber,
+        const char* raceNumber,
         RaceMode mode
-);
+    );
 
     // --------------------------------------------------------
     // Event
@@ -36,9 +38,7 @@ public:
         Packet& packet,
         uint8_t sender,
         uint8_t receiver,
-        uint16_t eventSequence,
-        EventType eventType,
-        uint16_t raceNumber
+        EventType eventType
     );
 
     // --------------------------------------------------------

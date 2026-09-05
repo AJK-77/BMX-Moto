@@ -1,5 +1,7 @@
 #include "Common/RaceState.h"
 
+#include <string.h>
+
 
 RaceState::RaceState()
 {
@@ -10,7 +12,13 @@ RaceState::RaceState()
 void RaceState::reset()
 {
     eventSequence = 0;
-    raceNumber = 0;
+
+    raceNumber[0] = '0';
+    raceNumber[1] = '0';
+    raceNumber[2] = '0';
+    raceNumber[3] = '0';
+    raceNumber[4] = '\0';
+
     mode = RaceMode::MANUAL;
 }
 
@@ -21,7 +29,7 @@ uint16_t RaceState::getEventSequence() const
 }
 
 
-uint16_t RaceState::getRaceNumber() const
+const char* RaceState::getRaceNumber() const
 {
     return raceNumber;
 }
@@ -33,14 +41,37 @@ RaceMode RaceState::getMode() const
 }
 
 
-void RaceState::setRaceNumber(uint16_t value)
+void RaceState::setRaceNumber(const char* value)
 {
-    if (value > 9999)
+    if (value == nullptr)
     {
-        value = 9999;
+        return;
     }
 
-    raceNumber = value;
+    // Always start with four blanks.
+    raceNumber[0] = ' ';
+    raceNumber[1] = ' ';
+    raceNumber[2] = ' ';
+    raceNumber[3] = ' ';
+    raceNumber[4] = '\0';
+
+    // Copy at most four valid characters.
+    uint8_t position = 0;
+
+    while (value[position] != '\0' && position < 4)
+    {
+        char c = value[position];
+
+        if ((c >= '0' && c <= '9') || c == ' ')
+        {
+            raceNumber[position] = c;
+            position++;
+        }
+        else
+        {
+            return;
+        }
+    }
 }
 
 
@@ -69,8 +100,45 @@ void RaceState::gateDrop()
 {
     nextEvent();
 
-    uint16_t manche = raceNumber / 1000;
-    uint16_t moto = raceNumber % 1000;
+    // Race is:
+    //
+    // [Manche][Moto][Moto][Moto]
+    //
+    // Only the last three digits change.
+    //
+    // Example:
+    // 0125 -> 0126
+    // 0999 -> 0000
+    // 1999 -> 1000
+
+    uint8_t manche = 0;
+    uint16_t moto = 0;
+
+    // Manche
+    if (raceNumber[0] >= '0' &&
+        raceNumber[0] <= '9')
+    {
+        manche = raceNumber[0] - '0';
+    }
+
+    // Moto
+    if (raceNumber[1] >= '0' &&
+        raceNumber[1] <= '9')
+    {
+        moto += (raceNumber[1] - '0') * 100;
+    }
+
+    if (raceNumber[2] >= '0' &&
+        raceNumber[2] <= '9')
+    {
+        moto += (raceNumber[2] - '0') * 10;
+    }
+
+    if (raceNumber[3] >= '0' &&
+        raceNumber[3] <= '9')
+    {
+        moto += raceNumber[3] - '0';
+    }
 
     moto++;
 
@@ -79,7 +147,11 @@ void RaceState::gateDrop()
         moto = 0;
     }
 
-    raceNumber = (manche * 1000) + moto;
+    raceNumber[0] = '0' + manche;
+    raceNumber[1] = '0' + (moto / 100);
+    raceNumber[2] = '0' + ((moto / 10) % 10);
+    raceNumber[3] = '0' + (moto % 10);
+    raceNumber[4] = '\0';
 }
 
 
@@ -94,16 +166,34 @@ void RaceState::setEventSequence(uint16_t value)
 }
 
 
-bool RaceState::applyState(uint16_t receivedEventSequence,
-                           uint16_t receivedRaceNumber,
-                           RaceMode receivedMode)
+bool RaceState::applyState(
+    uint16_t receivedEventSequence,
+    const char* receivedRaceNumber,
+    RaceMode receivedMode)
 {
     if (receivedEventSequence <= eventSequence)
     {
         return false;
     }
 
-    if (receivedRaceNumber > 9999)
+    if (receivedRaceNumber == nullptr)
+    {
+        return false;
+    }
+
+    // Race must contain exactly four valid characters.
+    for (uint8_t i = 0; i < 4; i++)
+    {
+        char c = receivedRaceNumber[i];
+
+        if (!((c >= '0' && c <= '9') || c == ' '))
+        {
+            return false;
+        }
+    }
+
+    // Fifth character must be the string terminator.
+    if (receivedRaceNumber[4] != '\0')
     {
         return false;
     }
@@ -115,7 +205,13 @@ bool RaceState::applyState(uint16_t receivedEventSequence,
     }
 
     eventSequence = receivedEventSequence;
-    raceNumber = receivedRaceNumber;
+
+    raceNumber[0] = receivedRaceNumber[0];
+    raceNumber[1] = receivedRaceNumber[1];
+    raceNumber[2] = receivedRaceNumber[2];
+    raceNumber[3] = receivedRaceNumber[3];
+    raceNumber[4] = '\0';
+
     mode = receivedMode;
 
     return true;

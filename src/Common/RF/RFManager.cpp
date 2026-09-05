@@ -6,14 +6,17 @@
 #include "Common/NodeConfig.h"
 #include "Common/Protocol/RFProtocol.h"
 
+
 RFManager::RFManager()
 {
 }
+
 
 bool RFManager::begin()
 {
     return espNow.begin();
 }
+
 
 void RFManager::update()
 {
@@ -42,9 +45,11 @@ void RFManager::update()
     processPacket(packet);
 }
 
+
 void RFManager::send()
 {
 }
+
 
 void RFManager::sendHeartbeat()
 {
@@ -71,31 +76,36 @@ void RFManager::sendHeartbeat()
     sendPacket(packet);
 }
 
+
 void RFManager::sendEvent(EventType eventType)
 {
-    if (raceState == nullptr)
-    {
-        return;
-    }
-
     Packet packet;
 
     if (!RFProtocol::createEvent(
             packet,
             nodeConfig.getNodeAddress(),
             ADDRESS_BROADCAST,
-            raceState->getEventSequence(),
-            eventType,
-            raceState->getRaceNumber()))
+            eventType))
     {
         return;
     }
 
-    Serial.print("RF TX: GateDrop, event ");
-    Serial.println(raceState->getEventSequence());
+    Serial.print("RF TX Event: ");
+
+    switch (eventType)
+    {
+        case EventType::GateDrop:
+            Serial.println("GateDrop");
+            break;
+
+        default:
+            Serial.println("Unknown");
+            break;
+    }
 
     sendPacket(packet);
 }
+
 
 void RFManager::sendPacket(Packet& packet)
 {
@@ -114,20 +124,24 @@ void RFManager::sendPacket(Packet& packet)
     }
 }
 
+
 void RFManager::setActivityCallback(ActivityCallback callback)
 {
     activityCallback = callback;
 }
+
 
 void RFManager::setStateChangeCallback(StateChangeCallback callback)
 {
     stateChangeCallback = callback;
 }
 
+
 void RFManager::setRaceState(RaceState* state)
 {
     raceState = state;
 }
+
 
 void RFManager::processPacket(Packet& packet)
 {
@@ -147,7 +161,7 @@ void RFManager::processPacket(Packet& packet)
             const uint16_t eventSequence =
                 packet.getEventSequence();
 
-            const uint16_t raceNumber =
+            const char* raceNumber =
                 packet.getHeartbeatRaceNumber();
 
             const uint8_t modeValue =
@@ -213,6 +227,11 @@ void RFManager::processPacket(Packet& packet)
                 {
                     Serial.print("RF: State accepted, event ");
                     Serial.println(eventSequence);
+
+                    if (stateChangeCallback != nullptr)
+                    {
+                        stateChangeCallback();
+                    }
                 }
                 else
                 {
@@ -224,6 +243,7 @@ void RFManager::processPacket(Packet& packet)
 
             break;
         }
+
 
         // ========================================================
         // Event
@@ -242,6 +262,9 @@ void RFManager::processPacket(Packet& packet)
                     // Alleen de HH verwerkt de GateDrop
                     // als race-event.
                     //
+                    // De GateDrop zelf bevat GEEN eventSequence
+                    // en GEEN RaceState.
+                    //
                     // In MANUAL verandert de race niet.
                     if (raceState != nullptr &&
                         nodeConfig.isHH())
@@ -253,8 +276,17 @@ void RFManager::processPacket(Packet& packet)
                             Serial.print(
                                 " -> AUTO, race "
                             );
+
                             Serial.print(
                                 raceState->getRaceNumber()
+                            );
+
+                            Serial.print(
+                                ", event "
+                            );
+
+                            Serial.print(
+                                raceState->getEventSequence()
                             );
 
                             // RaceState is lokaal gewijzigd.
@@ -275,6 +307,7 @@ void RFManager::processPacket(Packet& packet)
                     break;
                 }
 
+
                 default:
                 {
                     Serial.print("Unknown event");
@@ -282,11 +315,11 @@ void RFManager::processPacket(Packet& packet)
                 }
             }
 
-            Serial.print(", event ");
-            Serial.println(packet.getEventSequence());
+            Serial.println();
 
             break;
         }
+
 
         // ========================================================
         // Status
@@ -297,12 +330,14 @@ void RFManager::processPacket(Packet& packet)
             break;
         }
 
+
         default:
         {
             break;
         }
     }
 }
+
 
 void RFManager::activity()
 {

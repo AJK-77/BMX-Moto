@@ -10,7 +10,6 @@
 #include "Common/Protocol/MessageType.h"
 #include "Common/Protocol/EventType.h"
 
-
 class Packet
 {
 public:
@@ -31,11 +30,21 @@ public:
         MessageType messageType
     );
 
+    // --------------------------------------------------------
+    // Heartbeat
+    // --------------------------------------------------------
     bool addHeartbeat(
-    uint16_t eventSequence,
-    uint16_t raceNumber,
-    uint8_t mode
-);
+        uint16_t eventSequence,
+        const char* raceNumber,
+        uint8_t mode
+    );
+
+    // --------------------------------------------------------
+    // Event
+    // --------------------------------------------------------
+    bool addEvent(
+        EventType eventType
+    );
 
     bool addCRC();
 
@@ -46,12 +55,17 @@ public:
 
     MessageType getMessageType() const;
 
+    // --------------------------------------------------------
+    // Heartbeat
+    // --------------------------------------------------------
     uint16_t getEventSequence() const;
-    uint16_t getHeartbeatRaceNumber() const;
+    const char* getHeartbeatRaceNumber() const;
     uint8_t getHeartbeatMode() const;
 
+    // --------------------------------------------------------
+    // Event
+    // --------------------------------------------------------
     EventType getEventType() const;
-    uint16_t getRaceNumber() const;
 
     uint8_t* getData();
     const uint8_t* getData() const;
