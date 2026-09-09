@@ -99,3 +99,8 @@ void Display485::sendDisplayFrame()
 
     digitalWrite(PIN_RS485_DE_RE, LOW);
 }
+
+void Display485::onStateChanged()
+{
+    sendDisplayFrame();
+}

@@ -14,6 +14,7 @@ public:
     void onRFActivity();
     void onHeartbeat();
     void onHeartbeatReceived(uint16_t eventSequence);
+    void onStateChanged();
 
     void setRaceState(RaceState* state);
     void sendTestFrame();

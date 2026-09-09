@@ -10,15 +10,16 @@
 constexpr int DISPLAY_OFFSET_TOP    = 20;
 constexpr int DISPLAY_OFFSET_BOTTOM = 20;
 
+constexpr uint8_t BACKLIGHT_CHANNEL = 0;
+constexpr uint32_t BACKLIGHT_FREQUENCY = 5000;
+constexpr uint8_t BACKLIGHT_RESOLUTION = 8;
+
 
 TFTClass TFT;
 
 
 bool TFTClass::begin()
 {
-    pinMode(TFT_BACKLIGHT, OUTPUT);
-    digitalWrite(TFT_BACKLIGHT, HIGH);
-
     tft.init();
     tft.setRotation(1);
     tft.invertDisplay(true);
@@ -28,6 +29,21 @@ bool TFTClass::begin()
     tft.setTextFont(2);
     tft.setTextSize(1);
     tft.setTextColor(TFT_WHITE, TFT_BLACK);
+
+    pinMode(TFT_BACKLIGHT, OUTPUT);
+
+    ledcSetup(
+        BACKLIGHT_CHANNEL,
+        BACKLIGHT_FREQUENCY,
+        BACKLIGHT_RESOLUTION
+    );
+
+    ledcAttachPin(
+        TFT_BACKLIGHT,
+        BACKLIGHT_CHANNEL
+    );
+
+    setBacklight(100);
 
     return true;
 }
@@ -266,4 +282,23 @@ void TFTClass::drawBattery(
             TFT_WHITE
         );
     }
+}
+
+void TFTClass::setBacklight(uint8_t percent)
+{
+    if (percent < 10)
+        percent = 10;
+
+    if (percent > 100)
+        percent = 100;
+
+    const uint8_t duty =
+        static_cast<uint8_t>(
+            (static_cast<uint16_t>(percent) * 255) / 100
+        );
+
+    ledcWrite(
+        BACKLIGHT_CHANNEL,
+        duty
+    );
 }

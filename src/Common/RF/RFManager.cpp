@@ -6,17 +6,14 @@
 #include "Common/NodeConfig.h"
 #include "Common/Protocol/RFProtocol.h"
 
-
 RFManager::RFManager()
 {
 }
-
 
 bool RFManager::begin()
 {
     return espNow.begin();
 }
-
 
 void RFManager::update()
 {
@@ -45,11 +42,9 @@ void RFManager::update()
     processPacket(packet);
 }
 
-
 void RFManager::send()
 {
 }
-
 
 void RFManager::sendHeartbeat()
 {
@@ -73,9 +68,26 @@ void RFManager::sendHeartbeat()
     Serial.print("TX Event ");
     Serial.println(raceState->getEventSequence());
 
+    if (rfDataCallback != nullptr)
+    {
+        char text[40];
+
+        snprintf(
+            text,
+            sizeof(text),
+            "Event %u Race %s %s",
+            raceState->getEventSequence(),
+            raceState->getRaceNumber(),
+            raceState->getMode() == RaceMode::AUTO
+                ? "AUTO"
+                : "MANUAL"
+        );
+
+        rfDataCallback(text, true);
+    }
+
     sendPacket(packet);
 }
-
 
 void RFManager::sendEvent(EventType eventType)
 {
@@ -106,7 +118,6 @@ void RFManager::sendEvent(EventType eventType)
     sendPacket(packet);
 }
 
-
 void RFManager::sendPacket(Packet& packet)
 {
     uint8_t broadcastAddress[] =
@@ -124,24 +135,25 @@ void RFManager::sendPacket(Packet& packet)
     }
 }
 
-
 void RFManager::setActivityCallback(ActivityCallback callback)
 {
     activityCallback = callback;
 }
-
 
 void RFManager::setStateChangeCallback(StateChangeCallback callback)
 {
     stateChangeCallback = callback;
 }
 
+void RFManager::setRFDataCallback(RFDataCallback callback)
+{
+    rfDataCallback = callback;
+}
 
 void RFManager::setRaceState(RaceState* state)
 {
     raceState = state;
 }
-
 
 void RFManager::processPacket(Packet& packet)
 {
@@ -152,10 +164,6 @@ void RFManager::processPacket(Packet& packet)
 
     switch (packet.getMessageType())
     {
-        // ========================================================
-        // Heartbeat
-        // ========================================================
-
         case MessageType::Heartbeat:
         {
             const uint16_t eventSequence =
@@ -172,20 +180,26 @@ void RFManager::processPacket(Packet& packet)
 
             Serial.print("RX ");
 
+            const char* senderType;
+
             if (sender >= 1 && sender <= 10)
             {
+                senderType = "HH";
                 Serial.print("HH");
             }
             else if (sender >= 11 && sender <= 20)
             {
+                senderType = "GN";
                 Serial.print("GN");
             }
             else if (sender >= 21 && sender <= 30)
             {
+                senderType = "D";
                 Serial.print("D");
             }
             else
             {
+                senderType = "?";
                 Serial.print("?");
             }
 
@@ -218,6 +232,26 @@ void RFManager::processPacket(Packet& packet)
             RaceMode receivedMode =
                 static_cast<RaceMode>(modeValue);
 
+            if (rfDataCallback != nullptr)
+            {
+                char text[40];
+
+                snprintf(
+                    text,
+                    sizeof(text),
+                    "%s%u Event %u Race %s %s",
+                    senderType,
+                    sender,
+                    eventSequence,
+                    raceNumber,
+                    receivedMode == RaceMode::AUTO
+                        ? "AUTO"
+                        : "MANUAL"
+                );
+
+                rfDataCallback(text, false);
+            }
+
             if (raceState != nullptr)
             {
                 if (raceState->applyState(
@@ -244,11 +278,6 @@ void RFManager::processPacket(Packet& packet)
             break;
         }
 
-
-        // ========================================================
-        // Event
-        // ========================================================
-
         case MessageType::Event:
         {
             Serial.print("RF RX: ");
@@ -258,6 +287,11 @@ void RFManager::processPacket(Packet& packet)
                 case EventType::GateDrop:
                 {
                     Serial.print("GateDrop");
+
+                    if (rfDataCallback != nullptr)
+                    {
+                        rfDataCallback("GateDrop", false);
+                    }
 
                     // Alleen de HH verwerkt de GateDrop
                     // als race-event.
@@ -307,7 +341,6 @@ void RFManager::processPacket(Packet& packet)
                     break;
                 }
 
-
                 default:
                 {
                     Serial.print("Unknown event");
@@ -320,16 +353,10 @@ void RFManager::processPacket(Packet& packet)
             break;
         }
 
-
-        // ========================================================
-        // Status
-        // ========================================================
-
         case MessageType::Status:
         {
             break;
         }
-
 
         default:
         {
@@ -337,7 +364,6 @@ void RFManager::processPacket(Packet& packet)
         }
     }
 }
-
 
 void RFManager::activity()
 {

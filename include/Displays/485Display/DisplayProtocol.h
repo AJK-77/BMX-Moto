@@ -4,24 +4,29 @@
 
 namespace DisplayProtocol
 {
-    constexpr uint8_t HEADER_1 = 0x04;
-    constexpr uint8_t HEADER_2 = 0x04;
-    constexpr uint8_t MESSAGE_TYPE = 0x81;
-    constexpr uint8_t DISPLAY_DATA = 0x3D;
 
-    constexpr uint8_t SEPARATOR = 0x20;
+constexpr uint8_t HEADER_1     = 0x04;
+constexpr uint8_t HEADER_2     = 0x04;
+constexpr uint8_t MESSAGE_TYPE = 0x81;
+constexpr uint8_t DISPLAY_DATA = 0x3D;
 
-    constexpr uint8_t DATA_END = 0x03;
-    constexpr uint8_t FRAME_END_1 = 0x06;
-    constexpr uint8_t FRAME_END_2 = 0x06;
+constexpr uint8_t SEPARATOR    = 0x20;
+constexpr uint8_t DATA_END     = 0x03;
+constexpr uint8_t FRAME_END_1  = 0x06;
+constexpr uint8_t FRAME_END_2  = 0x06;
 
-    constexpr uint8_t MANCHE_BASE = 0xB0;
-    constexpr uint8_t CHECKSUM_XOR = 0x1D;
+// Eerste fysieke digit: B0..B9
+constexpr uint8_t FIRST_DIGIT_BASE = 0xB0;
 
-    constexpr size_t DISPLAY_FRAME_SIZE = 13;
+// Bewezen checksum:
+// B? ^ 20 ^ ASCII1 ^ ASCII2 ^ 03 ^ BE
+constexpr uint8_t CHECKSUM_XOR = 0xBE;
 
-    void buildDisplayFrame(
-        const char* raceNumber,
-        uint8_t* frame
-    );
+constexpr size_t DISPLAY_FRAME_SIZE = 13;
+
+void buildDisplayFrame(
+    const char* raceNumber,
+    uint8_t* frame
+);
+
 }

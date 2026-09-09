@@ -3,6 +3,7 @@
 #include "Handheld/GUI/TFT.h"
 #include "Handheld/GUI/GuiLayout.h"
 #include "Handheld/Screens/MainScreen.h"
+#include <string.h>
 
 
 MainScreen::MainScreen()
@@ -36,6 +37,10 @@ void MainScreen::setStateChangeCallback(StateChangeCallback callback)
     stateChangeCallback = callback;
 }
 
+void MainScreen::setMenuCallback(MenuCallback callback)
+{
+    menuCallback = callback;
+}
 
 void MainScreen::draw()
 {
@@ -148,59 +153,71 @@ void MainScreen::draw()
     char motoText[4];
 
     if (inputMode &&
-        inputDigits == 0 &&
-        selectedField == EditField::MANCHE)
-    {
-        snprintf(
-            mancheText,
-            sizeof(mancheText),
-            "-"
-        );
-    }
-    else if (inputMode &&
-             selectedField == EditField::MANCHE)
-    {
-        snprintf(
-            mancheText,
-            sizeof(mancheText),
-            "%u",
-            inputValue
-        );
-    }
-    else
-    {
-        mancheText[0] = raceNumber[0];
-        mancheText[1] = '\0';
-    }
+    inputDigits == 0 &&
+    selectedField == EditField::MANCHE)
+{
+    snprintf(
+        mancheText,
+        sizeof(mancheText),
+        "-"
+    );
+}
+else if (inputMode &&
+         selectedField == EditField::MANCHE)
+{
+    snprintf(
+        mancheText,
+        sizeof(mancheText),
+        "%u",
+        inputValue
+    );
+}
+else if (inputMode)
+{
+    mancheText[0] = tempRaceNumber[0];
+    mancheText[1] = '\0';
+}
+else
+{
+    mancheText[0] = raceNumber[0];
+    mancheText[1] = '\0';
+}
 
 
     if (inputMode &&
-        inputDigits == 0 &&
-        selectedField == EditField::MOTO)
-    {
-        snprintf(
-            motoText,
-            sizeof(motoText),
-            "---"
-        );
-    }
-    else if (inputMode &&
-             selectedField == EditField::MOTO)
-    {
-        snprintf(
-            motoText,
-            sizeof(motoText),
-            "%03u",
-            inputValue
-        );
-    }
-    else
-    {
-        motoText[0] = raceNumber[1];
-        motoText[1] = raceNumber[2];
-        motoText[2] = raceNumber[3];
-        motoText[3] = '\0';
-    }
+    inputDigits == 0 &&
+    selectedField == EditField::MOTO)
+{
+    snprintf(
+        motoText,
+        sizeof(motoText),
+        "---"
+    );
+}
+else if (inputMode &&
+         selectedField == EditField::MOTO)
+{
+    snprintf(
+        motoText,
+        sizeof(motoText),
+        "%03u",
+        inputValue
+    );
+}
+else if (inputMode)
+{
+    motoText[0] = tempRaceNumber[1];
+    motoText[1] = tempRaceNumber[2];
+    motoText[2] = tempRaceNumber[3];
+    motoText[3] = '\0';
+}
+else
+{
+    motoText[0] = raceNumber[1];
+    motoText[1] = raceNumber[2];
+    motoText[2] = raceNumber[3];
+    motoText[3] = '\0';
+}
 
 
     // --------------------------------------------------------
@@ -289,6 +306,15 @@ void MainScreen::onKeyEvent(const TCA8418::KeyEvent& event)
         return;
     }
 
+    if (event.key == TCA8418::Key::SKL)
+{
+    if (menuCallback != nullptr)
+    {
+        menuCallback();
+    }
+
+    return;
+}
 
     // ========================================================
     // Direct input mode
@@ -296,6 +322,49 @@ void MainScreen::onKeyEvent(const TCA8418::KeyEvent& event)
 
     if (inputMode)
     {
+        // ----------------------------------------------------
+        // LEFT / RIGHT = wissel tussen MANCHE en MOTO
+        // ----------------------------------------------------
+
+        if (event.key == TCA8418::Key::LEFT ||
+    event.key == TCA8418::Key::RIGHT)
+{
+    // Eerst de huidige invoer opslaan
+    if (inputDigits > 0)
+    {
+        if (selectedField == EditField::MANCHE)
+        {
+            tempRaceNumber[0] = '0' + inputValue;
+        }
+        else
+        {
+            tempRaceNumber[1] = '0' + (inputValue / 100);
+            tempRaceNumber[2] = '0' + ((inputValue / 10) % 10);
+            tempRaceNumber[3] = '0' + (inputValue % 10);
+        }
+    }
+
+    // In AUTO mag alleen Moto worden bewerkt
+    if (raceState->getMode() == RaceMode::AUTO)
+    {
+        selectedField = EditField::MOTO;
+    }
+    else
+    {
+        if (event.key == TCA8418::Key::LEFT)
+            selectedField = EditField::MANCHE;
+        else
+            selectedField = EditField::MOTO;
+    }
+
+    // Nieuwe invoer voor het nieuwe veld
+    inputValue = 0;
+    inputDigits = 0;
+
+    draw();
+    return;
+}
+
         // ----------------------------------------------------
         // C of ESC = cancel
         // ----------------------------------------------------
@@ -654,6 +723,13 @@ void MainScreen::startInput()
         selectedField = EditField::MOTO;
     }
 
+    // Maak een tijdelijke kopie van de huidige RaceState.
+    memcpy(
+        tempRaceNumber,
+        raceState->getRaceNumber(),
+        sizeof(tempRaceNumber)
+    );
+
     inputMode = true;
     inputValue = 0;
     inputDigits = 0;
@@ -676,62 +752,39 @@ void MainScreen::cancelInput()
 
 void MainScreen::confirmInput()
 {
-    if (!inputMode || raceState == nullptr)
-    {
-        return;
-    }
-
-    // Geen cijfers ingevoerd = niets wijzigen.
-    if (inputDigits == 0)
+    if (raceState == nullptr)
     {
         cancelInput();
         return;
     }
 
-
-    char newRaceNumber[5];
-
-    memcpy(
-        newRaceNumber,
-        raceState->getRaceNumber(),
-        sizeof(newRaceNumber)
-    );
-
-
-    if (selectedField == EditField::MANCHE)
+    // Laatste veld eerst opslaan
+    if (inputDigits > 0)
     {
-        // Manche kan alleen in MANUAL worden gewijzigd.
-        if (raceState->getMode() != RaceMode::MANUAL)
+        if (selectedField == EditField::MANCHE)
         {
-            cancelInput();
-            return;
+            tempRaceNumber[0] = '0' + inputValue;
         }
-
-        if (inputValue > 9)
+        else
         {
-            inputValue = 9;
+            tempRaceNumber[1] = '0' + (inputValue / 100);
+            tempRaceNumber[2] = '0' + ((inputValue / 10) % 10);
+            tempRaceNumber[3] = '0' + (inputValue % 10);
         }
-
-        newRaceNumber[0] = '0' + inputValue;
-    }
-    else
-    {
-        if (inputValue > 999)
-        {
-            inputValue = 999;
-        }
-
-        newRaceNumber[1] = '0' + (inputValue / 100);
-        newRaceNumber[2] = '0' + ((inputValue / 10) % 10);
-        newRaceNumber[3] = '0' + (inputValue % 10);
     }
 
+    // Controleren of er daadwerkelijk iets veranderd is
+    if (memcmp(
+            tempRaceNumber,
+            raceState->getRaceNumber(),
+            4) == 0)
+    {
+        cancelInput();
+        return;
+    }
 
-    // --------------------------------------------------------
-    // Pas hier wordt de waarde daadwerkelijk opgeslagen.
-    // --------------------------------------------------------
-
-    raceState->setRaceNumber(newRaceNumber);
+    // Alles in één keer naar RaceState
+    raceState->setRaceNumber(tempRaceNumber);
     raceState->nextEvent();
 
     inputMode = false;

@@ -11,12 +11,21 @@
 
 #include "Handheld/GUI/TFT.h"
 #include "Handheld/Screens/MainScreen.h"
+#include "Handheld/Screens/MenuScreen.h"
+#include "Handheld/Screens/RFScreen.h"
+#include "Handheld/Screens/BrightnessScreen.h"
+#include "Handheld/Screens/VolumeScreen.h"
+#include "Handheld/Screens/FirmwareScreen.h"
 #include "Handheld/Input/TCA8418.h"
 
 enum class Screen
 {
     MAIN,
-    MENU
+    MENU,
+    RF,
+    BRIGHTNESS,
+    VOLUME,
+    FIRMWARE
 };
 
 class App
@@ -32,11 +41,14 @@ private:
 
     static void onRFActivity();
     static void onHeartbeat();
-    static void onKeyEvent(
-        const TCA8418::KeyEvent& event
-    );
-
+    static void onKeyEvent(const TCA8418::KeyEvent& event);
     static void onStateChanged();
+    static void onMenu();
+    static void onBack();
+    static void onMenuSelect(uint8_t item);
+    static void onRFBack();
+    static void onMenuBack();
+    static void onRFData(const char* text, bool tx);
 
     RaceState raceState;
 
@@ -49,6 +61,11 @@ private:
 
     TFTClass tft;
     MainScreen mainScreen;
+    MenuScreen menuScreen;
+    RFScreen rfScreen;
+    BrightnessScreen brightnessScreen;
+    VolumeScreen volumeScreen;
+    FirmwareScreen firmwareScreen;
 
     bool splashActive = true;
     Screen activeScreen = Screen::MAIN;

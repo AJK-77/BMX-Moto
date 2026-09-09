@@ -7,6 +7,7 @@ class TFTClass
 {
 public:
     bool begin();
+    void setBacklight(uint8_t percent);
 
     void clear();
     void update();

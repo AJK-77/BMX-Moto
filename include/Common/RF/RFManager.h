@@ -12,6 +12,7 @@ class RFManager
 public:
     using ActivityCallback = void (*)(void);
     using StateChangeCallback = void (*)(void);
+    using RFDataCallback = void (*)(const char* text, bool tx);
 
     RFManager();
 
@@ -24,6 +25,7 @@ public:
 
     void setActivityCallback(ActivityCallback callback);
     void setStateChangeCallback(StateChangeCallback callback);
+    void setRFDataCallback(RFDataCallback callback);
     void setRaceState(RaceState* state);
 
 private:
@@ -35,6 +37,7 @@ private:
 
     ActivityCallback activityCallback = nullptr;
     StateChangeCallback stateChangeCallback = nullptr;
+    RFDataCallback rfDataCallback = nullptr;
 
     RaceState* raceState = nullptr;
 };

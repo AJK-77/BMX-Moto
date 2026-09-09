@@ -265,26 +265,11 @@ void TCA8418::readKeyEvents()
         return;
     }
 
-
     // --------------------------------------------------------
-    // Number of events in FIFO
-    // --------------------------------------------------------
-
-    uint8_t keyLockEventCount;
-
-    if (!readRegister(REG_KEY_LCK_EC, keyLockEventCount))
-    {
-        return;
-    }
-
-    uint8_t eventCount = keyLockEventCount & 0x0F;
-
-
-    // --------------------------------------------------------
-    // Read all pending events
+    // FIFO volledig uitlezen
     // --------------------------------------------------------
 
-    while (eventCount > 0)
+    while (true)
     {
         uint8_t event;
 
@@ -293,11 +278,11 @@ void TCA8418::readKeyEvents()
             return;
         }
 
+        // FIFO leeg
         if (event == 0)
         {
             break;
         }
-
 
         // ----------------------------------------------------
         // Bit 7:
@@ -310,12 +295,10 @@ void TCA8418::readKeyEvents()
 
         uint8_t keyNumber = event & 0x7F;
 
-
         if (keyNumber == 0)
         {
             break;
         }
-
 
         // ----------------------------------------------------
         // Convert physical KEY number to logical key
@@ -323,10 +306,16 @@ void TCA8418::readKeyEvents()
 
         Key key = matrixToKey(keyNumber);
 
-
         // ----------------------------------------------------
         // Send event to application
         // ----------------------------------------------------
+
+            Serial.print("TCA key = ");
+            Serial.print(keyNumber);
+            Serial.print(" ");
+            Serial.println(keyName(key));
+            Serial.print(") ");
+            Serial.println(pressed ? "DOWN" : "UP");
 
         if (key != Key::NONE && eventCallback != nullptr)
         {
@@ -340,11 +329,9 @@ void TCA8418::readKeyEvents()
                 : EventType::UP;
 
             eventCallback(keyEvent);
+            
         }
-
-        eventCount--;
     }
-
 
     // --------------------------------------------------------
     // Clear keypad interrupt
