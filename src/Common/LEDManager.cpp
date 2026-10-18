@@ -69,6 +69,8 @@ void LEDManager::update()
         green(true);
         greenHeartbeatActive = false;
     }
+
+        updateErrorCode();
 }
 
 void LEDManager::red(bool on)
@@ -148,4 +150,138 @@ void LEDManager::bootFlash()
     green(true);
     delay(250);
     green(false);
+}
+
+void LEDManager::errorCode(uint8_t nodeAddress)
+{
+    if (nodeAddress == 0)
+    {
+        return;
+    }
+
+    errorNodeAddress = nodeAddress;
+
+    errorDigitCount = 0;
+
+    if (nodeAddress >= 100)
+    {
+        errorDigits[errorDigitCount++] = nodeAddress / 100;
+        nodeAddress %= 100;
+    }
+
+    if (nodeAddress >= 10)
+    {
+        errorDigits[errorDigitCount++] = nodeAddress / 10;
+        nodeAddress %= 10;
+    }
+
+    errorDigits[errorDigitCount++] = nodeAddress;
+
+    errorDigitIndex = 0;
+    errorFlashCount = 0;
+
+    // Foutcode gebruikt de rode LED
+    red(false);
+
+    errorState = ErrorState::LongOn;
+    errorTimer = millis() + ERROR_LONG;
+
+    red(true);
+}
+
+void LEDManager::clearErrorCode()
+{
+    errorState = ErrorState::Idle;
+
+    errorNodeAddress = 0;
+    errorDigitCount = 0;
+    errorDigitIndex = 0;
+    errorFlashCount = 0;
+
+    red(false);
+}
+
+void LEDManager::updateErrorCode()
+{
+    if (errorState == ErrorState::Idle)
+    {
+        return;
+    }
+
+    const unsigned long now = millis();
+
+    if ((int32_t)(now - errorTimer) < 0)
+    {
+        return;
+    }
+
+    switch (errorState)
+    {
+        case ErrorState::LongOn:
+            red(false);
+            errorTimer = now + ERROR_LONG;
+            errorState = ErrorState::LongOff;
+            break;
+
+        case ErrorState::LongOff:
+            errorFlashCount = 0;
+            errorTimer = now + ERROR_SHORT;
+            errorState = ErrorState::DigitOn;
+            red(true);
+            break;
+
+        case ErrorState::DigitOn:
+            red(false);
+
+            errorFlashCount++;
+
+            if (errorFlashCount >= errorDigits[errorDigitIndex])
+            {
+                if (errorDigitIndex + 1 >= errorDigitCount)
+                {
+                    // Laatste cijfer klaar
+                    errorTimer = now + ERROR_SHORT;
+                    errorState = ErrorState::EndPause;
+                }
+                else
+                {
+                    // Naar volgend cijfer
+                    errorDigitIndex++;
+                    errorFlashCount = 0;
+                    errorTimer = now + ERROR_DIGIT_PAUSE;
+                    errorState = ErrorState::DigitPause;
+                }
+            }
+            else
+            {
+                errorTimer = now + ERROR_SHORT;
+                errorState = ErrorState::DigitOff;
+            }
+            break;
+
+        case ErrorState::DigitOff:
+            red(true);
+            errorTimer = now + ERROR_SHORT;
+            errorState = ErrorState::DigitOn;
+            break;
+
+        case ErrorState::DigitPause:
+            errorTimer = now + ERROR_SHORT;
+            errorState = ErrorState::DigitOn;
+            red(true);
+            break;
+
+        case ErrorState::EndPause:
+            // Meteen opnieuw beginnen met de lange rode puls
+            red(false);
+            errorDigitIndex = 0;
+            errorFlashCount = 0;
+            errorTimer = now + ERROR_END_PAUSE;
+            errorState = ErrorState::LongOn;
+            //red(true);
+            break;
+
+        case ErrorState::Idle:
+            break;
+    }
 }

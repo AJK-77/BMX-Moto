@@ -1,11 +1,21 @@
 #include <Arduino.h>
+#include <esp_sleep.h>
 
 #include "App.h"
 #include "Common/NodeConfig.h"
+#include "Handheld/Pins.h"
 #include "Handheld/GUI/TFT.h"
 #include "Handheld/Input/TCA8418.h"
+#include "Handheld/Screens/PowerOffScreen.h"
+#include "Handheld/Audio.h"
+
 
 App* App::instance = nullptr;
+
+bool powerButtonHeld = false;
+unsigned long powerButtonStart = 0;
+bool powerOffTriggered = false;
+bool powerDownMode = false;
 
 App::App()
 {
@@ -28,11 +38,15 @@ void App::begin()
     rf.setActivityCallback(onRFActivity);
     rf.setStateChangeCallback(onStateChanged);
     rf.setRFDataCallback(onRFData);
-
+    rf.setHeartbeatReceivedCallback(onHeartbeatReceived);
+    
+    
     rf.begin();
 
     heartbeat.setRFManager(&rf);
     heartbeat.setHeartbeatCallback(onHeartbeat);
+    heartbeat.setHeartbeatLostCallback(onHeartbeatLost);
+    heartbeat.setHeartbeatRestoredCallback(onHeartbeatRestored);
     heartbeat.begin();
 
     // ============================================================
@@ -57,18 +71,32 @@ void App::begin()
     }
 
     // ============================================================
+    // MiniDisplay
+    // ============================================================
+
+    if (nodeConfig.isMiniDisplay())
+    {
+        miniDisplay.setRaceState(&raceState);
+        miniDisplay.begin();
+    }
+
+    // ============================================================
     // HandHeld
     // ============================================================
 
     if (nodeConfig.isHH())
     {
+        pinMode(POWER_WAKE_PIN, INPUT);
+
+        Audio.begin();
+
         TFT.begin();
 
         tca8418.begin();
         tca8418.setEventCallback(onKeyEvent);
 
         TFT.showSplash();
-
+        
         mainScreen.begin();
         mainScreen.setRaceState(&raceState);
         mainScreen.setStateChangeCallback(onStateChanged);
@@ -83,6 +111,7 @@ void App::begin()
 
         brightnessScreen.setBackCallback(onMenuBack);
         brightnessScreen.begin();
+        brightnessScreen.setRFManager(&rf);
 
         volumeScreen.setBackCallback(onMenuBack);
         volumeScreen.begin();
@@ -90,13 +119,43 @@ void App::begin()
         firmwareScreen.setBackCallback(onMenuBack);
         firmwareScreen.begin();
 
+        powerOffScreen.setBackCallback([]()
+        {
+            instance->activeScreen = Screen::MAIN;
+            instance->mainScreen.draw();
+        });
+
+        powerOffScreen.setPowerDownCallback([]()
+        {
+            powerDownMode = true;
+            instance->heartbeat.shutdown();
+            instance->rf.shutdown();
+        });
+
         splashActive = true;
-        activeScreen = Screen::MAIN;
+        activeScreen = Screen::MAIN;     
+        
+        Audio.boot();
     }
 }
 
 void App::update()
 {
+    if (nodeConfig.isHH() && powerDownMode)
+    {
+        if (digitalRead(POWER_WAKE_PIN) == LOW)
+        {
+            ESP.restart();
+        }
+
+        esp_sleep_enable_ext0_wakeup(
+            GPIO_NUM_35,
+            0
+        );
+
+        esp_deep_sleep_start();
+    }
+
     // ============================================================
     // Common
     // ============================================================
@@ -124,23 +183,71 @@ void App::update()
     }
 
     // ============================================================
+    // Display
+    // ============================================================
+
+    if (nodeConfig.isMiniDisplay())
+    {
+        miniDisplay.update();
+    }
+
+    // ============================================================
     // HandHeld
     // ============================================================
 
     if (nodeConfig.isHH())
     {
+
+        bool powerPressed = (digitalRead(POWER_WAKE_PIN) == LOW);
+
+        if (powerPressed && !powerButtonHeld)
+        {
+            powerButtonHeld = true;
+            powerButtonStart = millis();
+            powerOffTriggered = false;
+        }
+        else if (!powerPressed && powerButtonHeld)
+        {
+            powerButtonHeld = false;
+            powerButtonStart = 0;
+            powerOffTriggered = false;
+        }
+
+        if (powerButtonHeld && !powerOffTriggered)
+        {
+            if (millis() - powerButtonStart >= 1000)
+            {
+                powerOffTriggered = true;
+                activeScreen = Screen::POWEROFF;
+                powerOffScreen.draw();
+            }
+        }
+
         tca8418.update();
+        
 
         if (splashActive)
         {
+
             if (TFT.splashFinished())
             {
                 splashActive = false;
+
+                TFT.clearFull();
                 mainScreen.draw();
+                TFT.drawStatusBar("COMMUNICATIE OK");
             }
         }
         else
         {
+
+            TFT.drawBattery(
+                tca8418.battery25(),
+                tca8418.battery50(),
+                tca8418.battery75(),
+                tca8418.battery100()
+            );
+
             if (activeScreen == Screen::MAIN)
             {
                 mainScreen.update();
@@ -164,6 +271,10 @@ void App::update()
             else if (activeScreen == Screen::FIRMWARE)
             {
                 firmwareScreen.update();
+            }
+            else if (activeScreen == Screen::POWEROFF)
+            {
+                powerOffScreen.update();
             }
         }
     }
@@ -238,6 +349,123 @@ void App::onHeartbeat()
     }
 }
 
+void App::onHeartbeatReceived(uint8_t sender)
+{
+    if (instance == nullptr)
+    {
+        return;
+    }
+
+    instance->heartbeat.onHeartbeatReceived(sender);
+}
+
+void App::onHeartbeatLost(uint8_t node)
+{
+
+    Serial.print("APP HEARTBEAT LOST: node ");
+    Serial.println(node);
+
+    if (instance == nullptr)
+    {
+        return;
+    }
+
+    if (nodeConfig.isGateNode())
+    {
+        instance->gateNode.onHeartbeatLost(node);
+    }
+
+    if (nodeConfig.isDisplay())
+    {
+        instance->display485.onHeartbeatLost(node);
+    }
+
+    if (nodeConfig.isMiniDisplay())
+    {
+        instance->miniDisplay.onHeartbeatLost(node);
+    }
+
+    if (nodeConfig.isHH())
+    {
+        char statusText[32];
+
+        if (node >= 11 && node <= 20)
+        {
+            snprintf(
+                statusText,
+                sizeof(statusText),
+                "LOST: Gate %u",
+                node - 10
+            );
+        }
+        else if (node >= 21 && node <= 30)
+        {
+            snprintf(
+                statusText,
+                sizeof(statusText),
+                "LOST: Display %u",
+                node - 20
+            );
+        }
+        else
+        {
+            snprintf(
+                statusText,
+                sizeof(statusText),
+                "LOST: Node %u",
+                node
+            );
+        }
+
+        if (!instance->splashActive)
+        {
+            TFT.drawStatusBar(statusText);
+        }
+    }   // ← deze sluit if (nodeConfig.isHH())
+
+}
+
+void App::onHeartbeatRestored(uint8_t node)
+{
+    if (instance == nullptr)
+    {
+        return;
+    }
+
+    if (nodeConfig.isGateNode())
+    {
+        instance->gateNode.onHeartbeatRestored();
+    }
+
+    if (nodeConfig.isDisplay())
+    {
+        instance->display485.onHeartbeatRestored();
+    }
+
+    if (nodeConfig.isMiniDisplay())
+    {
+        instance->miniDisplay.onHeartbeatRestored();
+    }
+
+    if (nodeConfig.isHH())
+    {
+        strncpy(
+            instance->communicationStatus,
+            "COMMUNICATIE OK",
+            sizeof(instance->communicationStatus) - 1
+        );
+
+        instance->communicationStatus[
+            sizeof(instance->communicationStatus) - 1
+        ] = '\0';
+
+        //if (!instance->splashActive)
+        {
+            TFT.drawStatusBar(instance->communicationStatus);
+        }
+    }
+}
+
 void App::onStateChanged()
 {
     if (instance == nullptr)
@@ -247,7 +475,8 @@ void App::onStateChanged()
 
     if (nodeConfig.isHH())
     {
-        if (instance->activeScreen == Screen::MAIN)
+        if (instance->activeScreen == Screen::MAIN &&
+            !instance->splashActive)
         {
             instance->mainScreen.draw();
         }
@@ -276,6 +505,11 @@ void App::onStateChanged()
     if (nodeConfig.isDisplay())
     {
         instance->display485.onStateChanged();
+    }
+
+    if (nodeConfig.isMiniDisplay())
+    {
+        instance->miniDisplay.onStateChanged();
     }
 }
 
@@ -368,9 +602,9 @@ void App::onKeyEvent(const TCA8418::KeyEvent& event)
         return;
     }
 
-    if (event.type != TCA8418::EventType::DOWN)
+    if (event.type == TCA8418::EventType::DOWN)
     {
-        return;
+        Audio.click(instance->volumeScreen.getVolume());
     }
 
     // Main screen
@@ -412,6 +646,13 @@ void App::onKeyEvent(const TCA8418::KeyEvent& event)
     if (instance->activeScreen == Screen::FIRMWARE)
     {
         instance->firmwareScreen.onKeyEvent(event);
+        return;
+    }
+
+    // Power Off
+    if (instance->activeScreen == Screen::POWEROFF)
+    {
+        instance->powerOffScreen.onKeyEvent(event);
         return;
     }
 }

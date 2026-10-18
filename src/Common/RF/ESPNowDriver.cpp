@@ -46,6 +46,13 @@ bool ESPNowDriver::begin()
     return true;
 }
 
+void ESPNowDriver::shutdown()
+{
+    esp_now_deinit();
+    WiFi.disconnect(true);
+    WiFi.mode(WIFI_OFF);
+}
+
 bool ESPNowDriver::addPeer(const uint8_t* macAddress)
 {
     if (macAddress == nullptr)

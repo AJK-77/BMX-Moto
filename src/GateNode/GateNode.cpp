@@ -71,6 +71,16 @@ void GateNode::onHeartbeat()
     leds.greenHeartbeat();
 }
 
+void GateNode::onHeartbeatLost(uint8_t node)
+{
+    leds.errorCode(node);
+}
+
+void GateNode::onHeartbeatRestored()
+{
+    leds.clearErrorCode();
+}
+
 void GateNode::setRFManager(RFManager* manager)
 {
     rf = manager;

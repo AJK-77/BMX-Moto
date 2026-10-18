@@ -21,20 +21,25 @@ public:
     void setMenuCallback(MenuCallback callback);
 
     void onKeyEvent(const TCA8418::KeyEvent& event);
+
+    void onHeartbeatLost(uint8_t node);
+    void onHeartbeatRestored();
     
 private:
     enum class EditField
     {
         MANCHE,
-        MOTO
+        RACE
     };
 
     RaceState* raceState = nullptr;
     StateChangeCallback stateChangeCallback = nullptr;
     
-    EditField selectedField = EditField::MOTO;
+    EditField selectedField = EditField::RACE;
 
     MenuCallback menuCallback = nullptr;
+
+    uint8_t heartbeatErrorNode = 0;
 
     bool inputMode = false;
     uint16_t inputValue = 0;
@@ -46,5 +51,6 @@ private:
     void cancelInput();
     void confirmInput();
     void inputDigit(uint8_t digit);
+    
     
 };

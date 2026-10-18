@@ -49,7 +49,7 @@ public:
     bool addCRC();
 
     uint16_t getLength() const;
-
+    uint8_t getBrightness() const;
     uint8_t getSender() const;
     uint8_t getReceiver() const;
 
@@ -69,6 +69,13 @@ public:
 
     uint8_t* getData();
     const uint8_t* getData() const;
+
+    // --------------------------------------------------------
+    // Brightness
+    // --------------------------------------------------------
+    bool addBrightness(
+        uint8_t brightness
+    );
 
 private:
     uint8_t data[MAX_PACKET_SIZE];

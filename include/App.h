@@ -6,8 +6,8 @@
 #include "Common/RaceState.h"
 
 #include "GateNode/GateNode.h"
-
 #include "Displays/485Display/485Display.h"
+#include "Displays/MiniDisplay/MiniDisplay.h"
 
 #include "Handheld/GUI/TFT.h"
 #include "Handheld/Screens/MainScreen.h"
@@ -17,6 +17,7 @@
 #include "Handheld/Screens/VolumeScreen.h"
 #include "Handheld/Screens/FirmwareScreen.h"
 #include "Handheld/Input/TCA8418.h"
+#include "Handheld/Screens/PowerOffScreen.h"
 
 enum class Screen
 {
@@ -25,7 +26,8 @@ enum class Screen
     RF,
     BRIGHTNESS,
     VOLUME,
-    FIRMWARE
+    FIRMWARE,
+    POWEROFF
 };
 
 class App
@@ -41,6 +43,9 @@ private:
 
     static void onRFActivity();
     static void onHeartbeat();
+    static void onHeartbeatReceived(uint8_t sender);
+    static void onHeartbeatLost(uint8_t node);
+    static void onHeartbeatRestored(uint8_t node);
     static void onKeyEvent(const TCA8418::KeyEvent& event);
     static void onStateChanged();
     static void onMenu();
@@ -58,7 +63,8 @@ private:
 
     GateNode gateNode;
     Display485 display485;
-
+    MiniDisplay miniDisplay;
+    
     TFTClass tft;
     MainScreen mainScreen;
     MenuScreen menuScreen;
@@ -66,7 +72,10 @@ private:
     BrightnessScreen brightnessScreen;
     VolumeScreen volumeScreen;
     FirmwareScreen firmwareScreen;
+    PowerOffScreen powerOffScreen;
 
     bool splashActive = true;
     Screen activeScreen = Screen::MAIN;
+
+    char communicationStatus[32] = "COMMUNICATIE OK";
 };

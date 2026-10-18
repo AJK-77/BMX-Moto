@@ -15,6 +15,11 @@ bool RFManager::begin()
     return espNow.begin();
 }
 
+void RFManager::shutdown()
+{
+    espNow.shutdown();
+}
+
 void RFManager::update()
 {
     if (!espNow.available())
@@ -118,6 +123,26 @@ void RFManager::sendEvent(EventType eventType)
     sendPacket(packet);
 }
 
+void RFManager::sendBrightness(uint8_t brightness)
+{
+    Packet packet;
+
+    if (!RFProtocol::createBrightness(
+            packet,
+            nodeConfig.getNodeAddress(),
+            ADDRESS_BROADCAST,
+            brightness))
+    {
+        return;
+    }
+
+    Serial.print("RF TX Brightness: ");
+    Serial.print(brightness);
+    Serial.println("%");
+
+    sendPacket(packet);
+}
+
 void RFManager::sendPacket(Packet& packet)
 {
     uint8_t broadcastAddress[] =
@@ -177,6 +202,11 @@ void RFManager::processPacket(Packet& packet)
 
             const uint8_t sender =
                 packet.getSender();
+
+                if (heartbeatReceivedCallback != nullptr)
+                {
+                    heartbeatReceivedCallback(sender);
+                }
 
             Serial.print("RX ");
 
@@ -353,6 +383,18 @@ void RFManager::processPacket(Packet& packet)
             break;
         }
 
+        case MessageType::Brightness:
+        {
+            const uint8_t brightness =
+                packet.getBrightness();
+
+            Serial.print("RF RX Brightness: ");
+            Serial.print(brightness);
+            Serial.println("%");
+
+            break;
+        }
+
         case MessageType::Status:
         {
             break;
@@ -371,4 +413,11 @@ void RFManager::activity()
     {
         activityCallback();
     }
+}
+
+void RFManager::setHeartbeatReceivedCallback(
+    HeartbeatReceivedCallback callback
+)
+{
+    heartbeatReceivedCallback = callback;
 }

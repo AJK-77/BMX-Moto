@@ -16,6 +16,8 @@ public:
 
     void onRFActivity();
     void onHeartbeat();
+    void onHeartbeatLost(uint8_t node);
+    void onHeartbeatRestored();
 
     void setRFManager(RFManager* manager);
     void setRaceState(RaceState* state);

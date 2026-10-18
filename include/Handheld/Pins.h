@@ -50,7 +50,7 @@
 // ======================
 
 #define TCA_C4_RESERVE       4
-#define TCA_C5_IP5306_KEY    5
+#define TCA_C5_IP5306_KEY    5 // oud, niet meer gebruiken
 #define TCA_C6_BATTERY_25    6
 #define TCA_C7_BATTERY_50    7
 #define TCA_C8_BATTERY_75    8
@@ -62,3 +62,9 @@
 // ======================
 
 #define AUDIO_OUT 26
+
+// ======================
+// Power On
+// ======================
+
+#define POWER_WAKE_PIN 35

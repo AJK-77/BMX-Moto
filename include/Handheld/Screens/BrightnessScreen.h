@@ -2,6 +2,8 @@
 
 #include "Handheld/Input/TCA8418.h"
 
+class RFManager;
+
 class BrightnessScreen
 {
 public:
@@ -14,10 +16,13 @@ public:
     void update();
 
     void setBackCallback(BackCallback callback);
+    void setRFManager(RFManager* manager);
+
     void onKeyEvent(const TCA8418::KeyEvent& event);
 
 private:
     BackCallback backCallback = nullptr;
+    RFManager* rfManager = nullptr;
 
     uint8_t handheldBrightness = 100;
     uint8_t displayBrightness = 100;

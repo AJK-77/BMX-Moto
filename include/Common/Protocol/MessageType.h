@@ -11,5 +11,7 @@ enum class MessageType : uint8_t
 {
     Heartbeat = 1,
     Event = 2,
-    Status = 3
+    Status = 3,
+    Brightness = 4,
+    OTA = 5
 };

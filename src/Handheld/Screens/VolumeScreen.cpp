@@ -18,14 +18,6 @@ void VolumeScreen::draw()
 {
     TFT.clear();
 
-    // Status
-    TFT.drawText(
-        2,
-        GuiLayout::STATUS_Y + 5,
-        "RF OK",
-        1
-    );
-
     // Titel
     TFT.drawText(
         20,
@@ -73,9 +65,6 @@ void VolumeScreen::draw()
         "TERUG",
         2
     );
-
-    // Batterijsymbool
-    TFT.drawBattery(true, true, true, true);
 }
 
 void VolumeScreen::drawBar(int16_t x, int16_t y, uint8_t value)
@@ -198,4 +187,9 @@ void VolumeScreen::onKeyEvent(
         draw();
         return;
     }
+}
+
+uint8_t VolumeScreen::getVolume() const
+{
+    return volume;
 }

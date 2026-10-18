@@ -42,7 +42,9 @@ public:
         SKL,
         SKR,
 
-        SECOND_F
+        SECOND_F,
+
+        POWER
     };
 
     struct KeyEvent
@@ -60,7 +62,17 @@ public:
 
     const char* keyName(Key key);
 
+    bool battery25();
+    bool battery50();
+    bool battery75();
+    bool battery100();
+
 private:
+
+    bool battery25State = false;
+    bool battery50State = false;
+    bool battery75State = false;
+    bool battery100State = false;
 
     bool writeRegister(uint8_t reg, uint8_t value);
     bool readRegister(uint8_t reg, uint8_t &value);
@@ -70,7 +82,10 @@ private:
 
     Key matrixToKey(uint8_t keyNumber);
 
+    void readBatteryInputs();
+
     EventCallback eventCallback = nullptr;
+    
 };
 
 extern TCA8418 tca8418;

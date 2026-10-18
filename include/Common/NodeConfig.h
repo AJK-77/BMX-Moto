@@ -7,7 +7,10 @@ enum class HardwareType : uint8_t
     Unknown = 0,
     HH = 1,
     GateNode = 2,
-    Display = 3
+    Display = 3,       // 485Display
+    MiniDisplay = 4,
+    GanXinDisplay = 5
+
 };
 
 class NodeConfig
@@ -24,6 +27,8 @@ public:
     bool isHH() const;
     bool isGateNode() const;
     bool isDisplay() const;
+    bool isMiniDisplay() const;
+    bool isGanXinDisplay() const;
 
 private:
     uint8_t nodeAddress;

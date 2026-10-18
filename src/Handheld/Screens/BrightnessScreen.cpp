@@ -1,6 +1,7 @@
 #include "Handheld/Screens/BrightnessScreen.h"
 #include "Handheld/GUI/TFT.h"
 #include "Handheld/GUI/GuiLayout.h"
+#include "Common/RF/RFManager.h"
 
 
 BrightnessScreen::BrightnessScreen()
@@ -19,17 +20,14 @@ void BrightnessScreen::setBackCallback(BackCallback callback)
     backCallback = callback;
 }
 
+void BrightnessScreen::setRFManager(RFManager* manager)
+{
+    rfManager = manager;
+}
+
 void BrightnessScreen::draw()
 {
     TFT.clear();
-
-    // Status
-    TFT.drawText(
-        2,
-        GuiLayout::STATUS_Y + 5,
-        "RF OK",
-        1
-    );
 
     // Titel
     TFT.drawText(
@@ -49,7 +47,7 @@ void BrightnessScreen::draw()
     // Display(s)
     drawBrightnessItem(
         1,
-        "DISPLAY(S)",
+        "DISPLAYS",
         displayBrightness
     );
 
@@ -60,9 +58,6 @@ void BrightnessScreen::draw()
         "TERUG",
         2
     );
-
-    // Batterijsymbool
-    TFT.drawBattery(true, true, true, true);
 }
 
 void BrightnessScreen::drawBrightnessItem(
@@ -271,12 +266,16 @@ void BrightnessScreen::onKeyEvent(
             *value -= 10;
 
             if (selectedItem == 0)
-        {
-        TFT.setBacklight(handheldBrightness);
-        }
+            {
+                TFT.setBacklight(handheldBrightness);
+            }
+            else if (rfManager != nullptr)
+            {
+                rfManager->sendBrightness(displayBrightness);
+            }
 
-        draw();
-    }
+            draw();
+        }
 
         return;
     }
@@ -296,16 +295,20 @@ void BrightnessScreen::onKeyEvent(
         }
 
         if (*value < 100)
-{
-    *value += 10;
+        {
+            *value += 10;
 
-    if (selectedItem == 0)
-    {
-        TFT.setBacklight(handheldBrightness);
-    }
+            if (selectedItem == 0)
+            {
+                TFT.setBacklight(handheldBrightness);
+            }
+            else if (rfManager != nullptr)
+            {
+                rfManager->sendBrightness(displayBrightness);
+            }
 
-    draw();
-}
+            draw();
+        }
 
         return;
     }

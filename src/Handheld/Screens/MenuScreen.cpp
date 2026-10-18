@@ -38,8 +38,6 @@ void MenuScreen::draw()
 {
     TFT.clear();
 
-    TFT.drawText(2, GuiLayout::STATUS_Y + 5, "RF OK", 1);
-
     TFT.drawText(20, 30, "MENU", 2);
 
     for (uint8_t i = 0; i < MENU_ITEM_COUNT; i++)
@@ -47,9 +45,12 @@ void MenuScreen::draw()
         drawMenuItem(i);
     }
 
-    TFT.drawText(20, 166, "TERUG", 2);
-
-    TFT.drawBattery(true, true, true, true);
+    TFT.drawText(
+        GuiLayout::SKL_X,
+        GuiLayout::SOFTKEY_Y,
+        "TERUG",
+        2
+    );
 }
 
 void MenuScreen::drawMenuItem(uint8_t index)

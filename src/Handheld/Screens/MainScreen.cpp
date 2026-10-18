@@ -13,7 +13,7 @@ MainScreen::MainScreen()
 
 void MainScreen::begin()
 {
-    selectedField = EditField::MOTO;
+    selectedField = EditField::RACE;
     inputMode = false;
     inputValue = 0;
     inputDigits = 0;
@@ -27,7 +27,7 @@ void MainScreen::setRaceState(RaceState* state)
     if (raceState != nullptr &&
         raceState->getMode() == RaceMode::AUTO)
     {
-        selectedField = EditField::MOTO;
+        selectedField = EditField::RACE;
     }
 }
 
@@ -42,21 +42,22 @@ void MainScreen::setMenuCallback(MenuCallback callback)
     menuCallback = callback;
 }
 
+void MainScreen::onHeartbeatLost(uint8_t node)
+{
+    heartbeatErrorNode = node;
+    draw();
+}
+
+void MainScreen::onHeartbeatRestored()
+{
+    heartbeatErrorNode = 0;
+    draw();
+}
+
 void MainScreen::draw()
 {
+    //TFT.clearFull();
     TFT.clear();
-
-    // --------------------------------------------------------
-    // Status
-    // --------------------------------------------------------
-
-    TFT.drawText(
-        2,
-        GuiLayout::STATUS_Y + 5,
-        "RF OK",
-        1
-    );
-
 
     // --------------------------------------------------------
     // Labels
@@ -69,14 +70,14 @@ void MainScreen::draw()
         TFT.drawText(
             25,
             GuiLayout::RACE_TOP,
-            "MANCHE",
+            "MOTO",
             2
         );
 
         TFT.drawText(
             215,
             GuiLayout::RACE_TOP,
-            "MOTO",
+            "RACE",
             2
         );
     }
@@ -85,14 +86,14 @@ void MainScreen::draw()
         TFT.drawTextInverted(
             25,
             GuiLayout::RACE_TOP,
-            "MANCHE",
+            "MOTO",
             2
         );
 
         TFT.drawText(
             215,
             GuiLayout::RACE_TOP,
-            "MOTO",
+            "RACE",
             2
         );
     }
@@ -101,14 +102,14 @@ void MainScreen::draw()
         TFT.drawText(
             25,
             GuiLayout::RACE_TOP,
-            "MANCHE",
+            "MOTO",
             2
         );
 
         TFT.drawTextInverted(
             215,
             GuiLayout::RACE_TOP,
-            "MOTO",
+            "RACE",
             2
         );
     }
@@ -128,9 +129,9 @@ void MainScreen::draw()
     // RaceState:
     //
     // [0] = Manche
-    // [1] = Moto honderden
-    // [2] = Moto tientallen
-    // [3] = Moto eenheden
+    // [1] = RACE honderden
+    // [2] = RACE tientallen
+    // [3] = RACE eenheden
     //
     // RaceState is altijd exact vier tekens.
 
@@ -143,14 +144,14 @@ void MainScreen::draw()
     //
     // Zolang er nog geen cijfer is ingevoerd:
     //   MANCHE -> "-"
-    //   MOTO   -> "---"
+    //   RACE   -> "---"
     //
     // Zodra het eerste cijfer wordt ingevoerd,
     // wordt de tijdelijke invoer weergegeven.
     // --------------------------------------------------------
 
     char mancheText[5];
-    char motoText[4];
+    char raceText[4];
 
     if (inputMode &&
     inputDigits == 0 &&
@@ -186,37 +187,37 @@ else
 
     if (inputMode &&
     inputDigits == 0 &&
-    selectedField == EditField::MOTO)
+    selectedField == EditField::RACE)
 {
     snprintf(
-        motoText,
-        sizeof(motoText),
+        raceText,
+        sizeof(raceText),
         "---"
     );
 }
 else if (inputMode &&
-         selectedField == EditField::MOTO)
+         selectedField == EditField::RACE)
 {
     snprintf(
-        motoText,
-        sizeof(motoText),
+        raceText,
+        sizeof(raceText),
         "%03u",
         inputValue
     );
 }
 else if (inputMode)
 {
-    motoText[0] = tempRaceNumber[1];
-    motoText[1] = tempRaceNumber[2];
-    motoText[2] = tempRaceNumber[3];
-    motoText[3] = '\0';
+    raceText[0] = tempRaceNumber[1];
+    raceText[1] = tempRaceNumber[2];
+    raceText[2] = tempRaceNumber[3];
+    raceText[3] = '\0';
 }
 else
 {
-    motoText[0] = raceNumber[1];
-    motoText[1] = raceNumber[2];
-    motoText[2] = raceNumber[3];
-    motoText[3] = '\0';
+    raceText[0] = raceNumber[1];
+    raceText[1] = raceNumber[2];
+    raceText[2] = raceNumber[3];
+    raceText[3] = '\0';
 }
 
 
@@ -225,18 +226,32 @@ else
     // --------------------------------------------------------
 
     TFT.drawText(
-        55,
+        30,
         60,
         mancheText,
-        6
+        8
     );
 
     TFT.drawText(
-        170,
+        140,
         60,
-        motoText,
-        6
+        raceText,
+        8
     );
+
+    // --------------------------------------------------------
+    // Bevestiging invoer
+    // --------------------------------------------------------
+
+    if (inputMode)
+    {
+     TFT.drawText(
+            70,
+            145,
+            "DRUK OK OM TE BEVESTIGEN!",
+            1
+    );
+}
 
 
     // --------------------------------------------------------
@@ -253,7 +268,7 @@ else
     if (raceState != nullptr &&
         raceState->getMode() == RaceMode::AUTO)
     {
-        TFT.drawText(
+        TFT.drawTextInverted(
             240,
             166,
             "AUTO",
@@ -269,18 +284,6 @@ else
             2
         );
     }
-
-
-    // --------------------------------------------------------
-    // Battery
-    // --------------------------------------------------------
-
-    TFT.drawBattery(
-        true,
-        true,
-        true,
-        true
-    );
 }
 
 
@@ -323,7 +326,7 @@ void MainScreen::onKeyEvent(const TCA8418::KeyEvent& event)
     if (inputMode)
     {
         // ----------------------------------------------------
-        // LEFT / RIGHT = wissel tussen MANCHE en MOTO
+        // LEFT / RIGHT = wissel tussen MANCHE en RACE
         // ----------------------------------------------------
 
         if (event.key == TCA8418::Key::LEFT ||
@@ -344,17 +347,17 @@ void MainScreen::onKeyEvent(const TCA8418::KeyEvent& event)
         }
     }
 
-    // In AUTO mag alleen Moto worden bewerkt
+    // In AUTO mag alleen Race worden bewerkt
     if (raceState->getMode() == RaceMode::AUTO)
     {
-        selectedField = EditField::MOTO;
+        selectedField = EditField::RACE;
     }
     else
     {
         if (event.key == TCA8418::Key::LEFT)
             selectedField = EditField::MANCHE;
         else
-            selectedField = EditField::MOTO;
+            selectedField = EditField::RACE;
     }
 
     // Nieuwe invoer voor het nieuwe veld
@@ -464,28 +467,77 @@ void MainScreen::onKeyEvent(const TCA8418::KeyEvent& event)
 
 
     // --------------------------------------------------------
-    // RIGHT = select MOTO
+    // RIGHT = select RACE
     // --------------------------------------------------------
 
     if (event.key == TCA8418::Key::RIGHT)
     {
-        selectedField = EditField::MOTO;
+        selectedField = EditField::RACE;
         draw();
 
         return;
     }
 
+// ========================================================
+// Numeric input
+// Eerste cijfer start direct de invoer
+// ========================================================
 
-    // --------------------------------------------------------
-    // OK = direct input
-    // --------------------------------------------------------
-
-    if (event.key == TCA8418::Key::OK)
-    {
+switch (event.key)
+{
+    case TCA8418::Key::NUM_0:
         startInput();
+        inputDigit(0);
         return;
-    }
 
+    case TCA8418::Key::NUM_1:
+        startInput();
+        inputDigit(1);
+        return;
+
+    case TCA8418::Key::NUM_2:
+        startInput();
+        inputDigit(2);
+        return;
+
+    case TCA8418::Key::NUM_3:
+        startInput();
+        inputDigit(3);
+        return;
+
+    case TCA8418::Key::NUM_4:
+        startInput();
+        inputDigit(4);
+        return;
+
+    case TCA8418::Key::NUM_5:
+        startInput();
+        inputDigit(5);
+        return;
+
+    case TCA8418::Key::NUM_6:
+        startInput();
+        inputDigit(6);
+        return;
+
+    case TCA8418::Key::NUM_7:
+        startInput();
+        inputDigit(7);
+        return;
+
+    case TCA8418::Key::NUM_8:
+        startInput();
+        inputDigit(8);
+        return;
+
+    case TCA8418::Key::NUM_9:
+        startInput();
+        inputDigit(9);
+        return;
+
+    default:
+        break;
+}
 
     // ========================================================
     // +
@@ -529,39 +581,39 @@ void MainScreen::onKeyEvent(const TCA8418::KeyEvent& event)
         }
         else
         {
-            uint16_t moto = 0;
+            uint16_t race = 0;
 
             if (newRaceNumber[1] >= '0' &&
                 newRaceNumber[1] <= '9')
             {
-                moto +=
+                race +=
                     (newRaceNumber[1] - '0') * 100;
             }
 
             if (newRaceNumber[2] >= '0' &&
                 newRaceNumber[2] <= '9')
             {
-                moto +=
+                race +=
                     (newRaceNumber[2] - '0') * 10;
             }
 
             if (newRaceNumber[3] >= '0' &&
                 newRaceNumber[3] <= '9')
             {
-                moto +=
+                race +=
                     newRaceNumber[3] - '0';
             }
 
-            moto++;
+            race++;
 
-            if (moto > 999)
+            if (race > 999)
             {
-                moto = 0;
+                race = 0;
             }
 
-            newRaceNumber[1] = '0' + (moto / 100);
-            newRaceNumber[2] = '0' + ((moto / 10) % 10);
-            newRaceNumber[3] = '0' + (moto % 10);
+            newRaceNumber[1] = '0' + (race / 100);
+            newRaceNumber[2] = '0' + ((race / 10) % 10);
+            newRaceNumber[3] = '0' + (race % 10);
         }
 
         raceState->setRaceNumber(newRaceNumber);
@@ -622,41 +674,41 @@ void MainScreen::onKeyEvent(const TCA8418::KeyEvent& event)
         }
         else
         {
-            uint16_t moto = 0;
+            uint16_t race = 0;
 
             if (newRaceNumber[1] >= '0' &&
                 newRaceNumber[1] <= '9')
             {
-                moto +=
+                race +=
                     (newRaceNumber[1] - '0') * 100;
             }
 
             if (newRaceNumber[2] >= '0' &&
                 newRaceNumber[2] <= '9')
             {
-                moto +=
+                race +=
                     (newRaceNumber[2] - '0') * 10;
             }
 
             if (newRaceNumber[3] >= '0' &&
                 newRaceNumber[3] <= '9')
             {
-                moto +=
+                race +=
                     newRaceNumber[3] - '0';
             }
 
-            if (moto == 0)
+            if (race == 0)
             {
-                moto = 999;
+                race = 999;
             }
             else
             {
-                moto--;
+                race--;
             }
 
-            newRaceNumber[1] = '0' + (moto / 100);
-            newRaceNumber[2] = '0' + ((moto / 10) % 10);
-            newRaceNumber[3] = '0' + (moto % 10);
+            newRaceNumber[1] = '0' + (race / 100);
+            newRaceNumber[2] = '0' + ((race / 10) % 10);
+            newRaceNumber[3] = '0' + (race % 10);
         }
 
         raceState->setRaceNumber(newRaceNumber);
@@ -688,8 +740,8 @@ void MainScreen::onKeyEvent(const TCA8418::KeyEvent& event)
         {
             raceState->setMode(RaceMode::AUTO);
 
-            // In AUTO is alleen MOTO selecteerbaar.
-            selectedField = EditField::MOTO;
+            // In AUTO is alleen RACE selecteerbaar.
+            selectedField = EditField::RACE;
         }
 
         raceState->nextEvent();
@@ -717,10 +769,10 @@ void MainScreen::startInput()
         return;
     }
 
-    // In AUTO mag alleen MOTO worden ingevoerd.
+    // In AUTO mag alleen RACE worden ingevoerd.
     if (raceState->getMode() == RaceMode::AUTO)
     {
-        selectedField = EditField::MOTO;
+        selectedField = EditField::RACE;
     }
 
     // Maak een tijdelijke kopie van de huidige RaceState.
@@ -835,7 +887,7 @@ void MainScreen::inputDigit(uint8_t digit)
         return;
     }
 
-    if (selectedField == EditField::MOTO &&
+    if (selectedField == EditField::RACE &&
         newValue > 999)
     {
         return;

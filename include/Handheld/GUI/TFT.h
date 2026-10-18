@@ -10,8 +10,11 @@ public:
     void setBacklight(uint8_t percent);
 
     void clear();
+    void clearFull();
+    
     void update();
-
+   
+    
     void drawText(int16_t x, int16_t y, const char *text, uint8_t size = 1);
     void drawTextInverted(int16_t x, int16_t y, const char *text, uint8_t size = 1);
 
@@ -21,11 +24,13 @@ public:
     bool splashFinished();
 
     void drawBattery(
-    bool led25,
-    bool led50,
-    bool led75,
-    bool led100
-);
+        bool led25,
+        bool led50,
+        bool led75,
+        bool led100
+    );
+
+    void drawStatusBar(const char* communicationText);
 
     void showKey(const char *text);
     void showLine(int y);

@@ -42,6 +42,16 @@ public:
     );
 
     // --------------------------------------------------------
+    // Brightness
+    // --------------------------------------------------------
+    static bool createBrightness(
+        Packet& packet,
+        uint8_t sender,
+        uint8_t receiver,
+        uint8_t brightness
+    );
+
+    // --------------------------------------------------------
     // Status
     // --------------------------------------------------------
     static bool createStatus(

@@ -9,6 +9,8 @@ public:
 
     bool begin();
 
+    void shutdown();
+
     bool addPeer(const uint8_t* macAddress);
 
     bool send(

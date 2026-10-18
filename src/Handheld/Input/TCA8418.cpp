@@ -32,6 +32,9 @@ constexpr uint8_t REG_DEBOUNCE_DIS1    = 0x29;
 constexpr uint8_t REG_DEBOUNCE_DIS2    = 0x2A;
 constexpr uint8_t REG_DEBOUNCE_DIS3    = 0x2B;
 
+constexpr uint8_t REG_GPIO_DAT_STAT2   = 0x15;
+constexpr uint8_t REG_GPIO_DAT_STAT3   = 0x16;
+
 
 // ============================================================
 // CONFIG bits
@@ -64,6 +67,25 @@ void TCA8418::setEventCallback(EventCallback callback)
     eventCallback = callback;
 }
 
+bool TCA8418::battery25()
+{
+    return battery25State;
+}
+
+bool TCA8418::battery50()
+{
+    return battery50State;
+}
+
+bool TCA8418::battery75()
+{
+    return battery75State;
+}
+
+bool TCA8418::battery100()
+{
+    return battery100State;
+}
 
 // ============================================================
 // I2C register access
@@ -171,7 +193,7 @@ bool TCA8418::configure()
     // --------------------------------------------------------
     // GPIO interrupts disabled for now.
     //
-    // C5-C9 will later be used for battery/IP5306 inputs.
+    // C6-C9 will later be used for battery/IP5306 inputs.
     // --------------------------------------------------------
 
     if (!writeRegister(REG_GPIO_INT_EN1, 0x00))
@@ -244,6 +266,7 @@ bool TCA8418::configure()
 void TCA8418::update()
 {
     readKeyEvents();
+    readBatteryInputs();
 }
 
 
@@ -253,22 +276,6 @@ void TCA8418::update()
 
 void TCA8418::readKeyEvents()
 {
-    uint8_t intStatus;
-
-    if (!readRegister(REG_INT_STAT, intStatus))
-    {
-        return;
-    }
-
-    if ((intStatus & INT_STAT_K_INT) == 0)
-    {
-        return;
-    }
-
-    // --------------------------------------------------------
-    // FIFO volledig uitlezen
-    // --------------------------------------------------------
-
     while (true)
     {
         uint8_t event;
@@ -310,12 +317,12 @@ void TCA8418::readKeyEvents()
         // Send event to application
         // ----------------------------------------------------
 
-            Serial.print("TCA key = ");
-            Serial.print(keyNumber);
-            Serial.print(" ");
-            Serial.println(keyName(key));
-            Serial.print(") ");
-            Serial.println(pressed ? "DOWN" : "UP");
+        Serial.print("TCA key = ");
+        Serial.print(keyNumber);
+        Serial.print(" ");
+        Serial.print(keyName(key));
+        Serial.print(" ");
+        Serial.println(pressed ? "DOWN" : "UP");
 
         if (key != Key::NONE && eventCallback != nullptr)
         {
@@ -329,17 +336,15 @@ void TCA8418::readKeyEvents()
                 : EventType::UP;
 
             eventCallback(keyEvent);
-            
         }
-    }
 
     // --------------------------------------------------------
     // Clear keypad interrupt
     // --------------------------------------------------------
 
-    writeRegister(REG_INT_STAT, INT_STAT_K_INT);
-}
-
+        writeRegister(REG_INT_STAT, INT_STAT_K_INT);
+        }
+    }
 
 // ============================================================
 // KEY NUMBER -> logical key
@@ -354,16 +359,16 @@ TCA8418::Key TCA8418::matrixToKey(uint8_t keyNumber)
 {
     switch (keyNumber)
     {
-        case 63:
+        case 73:
             return Key::SKL;
 
-        case 61:
+        case 71:
             return Key::SKR;
 
-        case 74:
+        case 64:
             return Key::SECOND_F;
 
-        case 62:
+        case 72:
             return Key::UP;
 
         case 52:
@@ -477,8 +482,50 @@ const char* TCA8418::keyName(Key key)
 
         case Key::SECOND_F:  return "2ndF";
 
+        case Key::POWER:      return "POWER";
+
         case Key::NONE:
         default:
             return "UNKNOWN";
     }
+}
+
+void TCA8418::readBatteryInputs()
+{
+    uint8_t gpio2;
+    uint8_t gpio3;
+
+    if (!readRegister(REG_GPIO_DAT_STAT2, gpio2))
+        return;
+
+    if (!readRegister(REG_GPIO_DAT_STAT3, gpio3))
+        return;
+
+    static unsigned long last25 = 0;
+    static unsigned long last50 = 0;
+    static unsigned long last75 = 0;
+    static unsigned long last100 = 0;
+
+    const unsigned long now = millis();
+
+    // Multiplex-pulsen detecteren
+    if (!(gpio2 & (1 << 7)))
+        last25 = now;      // C7 = 25%
+
+    if (!(gpio2 & (1 << 6)))
+        last50 = now;      // C6 = 50%
+
+    if (!(gpio3 & (1 << 1)))
+        last75 = now;      // C9 = 75%
+
+    if (!(gpio3 & (1 << 0)))
+        last100 = now;     // C8 = 100%
+
+    // LED is actief als er recent een multiplex-puls is geweest
+    constexpr unsigned long BATTERY_FILTER_MS = 13;
+
+    battery25State  = (now - last25)  < BATTERY_FILTER_MS;
+    battery50State  = (now - last50)  < BATTERY_FILTER_MS;
+    battery75State  = (now - last75)  < BATTERY_FILTER_MS;
+    battery100State = (now - last100) < BATTERY_FILTER_MS;
 }

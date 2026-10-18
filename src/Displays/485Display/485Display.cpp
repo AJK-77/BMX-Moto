@@ -54,6 +54,16 @@ void Display485::onHeartbeat()
     sendDisplayFrame();
 }
 
+void Display485::onHeartbeatLost(uint8_t node)
+{
+    leds.errorCode(node);
+}
+
+void Display485::onHeartbeatRestored()
+{
+    leds.clearErrorCode();
+}
+
 void Display485::onHeartbeatReceived(uint16_t eventSequence)
 {
     lastHeartbeatEvent = eventSequence;
@@ -94,6 +104,9 @@ void Display485::sendDisplayFrame()
     );
 
     Serial2.flush();
+    leds.yellowFlash();
+    delay(2);
+    digitalWrite(PIN_RS485_DE_RE,LOW);
 
     delay(2);
 

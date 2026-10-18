@@ -67,6 +67,40 @@ bool RFProtocol::createEvent(
     return packet.addCRC();
 }
 
+// ============================================================
+// Brightness
+// ============================================================
+
+bool RFProtocol::createBrightness(
+    Packet& packet,
+    uint8_t sender,
+    uint8_t receiver,
+    uint8_t brightness
+)
+{
+    if (brightness > 100)
+    {
+        return false;
+    }
+
+    packet.clear();
+
+    if (!packet.addHeader(
+            sender,
+            receiver,
+            MessageType::Brightness))
+    {
+        return false;
+    }
+
+    if (!packet.addBrightness(brightness))
+    {
+        return false;
+    }
+
+    return packet.addCRC();
+}
+
 
 // ============================================================
 // Status

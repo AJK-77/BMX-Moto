@@ -51,7 +51,13 @@ bool TFTClass::begin()
 
 void TFTClass::clear()
 {
-    tft.fillScreen(TFT_BLACK);
+    tft.fillRect(
+        GuiLayout::toTftX(0),
+        GuiLayout::toTftY(GuiLayout::STATUS_HEIGHT),
+        GuiLayout::VIEW_WIDTH,
+        GuiLayout::VIEW_HEIGHT - GuiLayout::STATUS_HEIGHT,
+        TFT_BLACK
+    );
 }
 
 
@@ -113,12 +119,13 @@ void TFTClass::drawTextInverted(
 
 void TFTClass::showSplash()
 {
-    clear();
+    tft.fillScreen(TFT_BLACK);
 
     drawLogo();
 
-    drawText(120, 125, "BMX Handheld");
-    drawText(120, 146, "Initialising...");
+    drawText(110, 105, "BMX Moto Counter");
+    drawText(25, 125, "Made By A.J. Klarenbeek For Rapid Wheels");
+    drawText(55, 145, "Contact: ajklarenbeek@gmail.com");
 
     splashStart = millis();
 }
@@ -211,18 +218,38 @@ void TFTClass::fillRect(
     );
 }
 
+void TFTClass::clearFull()
+{
+    tft.fillScreen(TFT_BLACK);
+}
+
+
 void TFTClass::drawBattery(
     bool led25,
     bool led50,
     bool led75,
     bool led100)
 {
+    static bool last25  = false;
+    static bool last50  = false;
+    static bool last75  = false;
+    static bool last100 = false;
+
+    if (led25  == last25 &&
+        led50  == last50 &&
+        led75  == last75 &&
+        led100 == last100)
+    {
+        return;
+    }
+
+    last25  = led25;
+    last50  = led50;
+    last75  = led75;
+    last100 = led100;
+
     constexpr int16_t x = 278;
     constexpr int16_t y = GuiLayout::STATUS_Y + 3;
-
-    // ============================================================
-    // Batterij outline
-    // ============================================================
 
     constexpr int16_t bodyWidth  = 38;
     constexpr int16_t bodyHeight = 16;
@@ -235,9 +262,13 @@ void TFTClass::drawBattery(
         TFT_WHITE
     );
 
-    // ============================================================
-    // Batterij contact
-    // ============================================================
+    tft.fillRect(
+        GuiLayout::toTftX(x + 2),
+        GuiLayout::toTftY(y + 2),
+        bodyWidth - 4,
+        bodyHeight - 4,
+        TFT_BLACK
+    );
 
     tft.fillRect(
         GuiLayout::toTftX(x + bodyWidth),
@@ -247,13 +278,8 @@ void TFTClass::drawBattery(
         TFT_WHITE
     );
 
-    // ============================================================
-    // Vier batterijsegmenten
-    // ============================================================
-
     constexpr int16_t segmentWidth  = 5;
     constexpr int16_t segmentHeight = 8;
-
     constexpr int16_t segmentX   = 3;
     constexpr int16_t segmentY   = 4;
     constexpr int16_t segmentGap = 3;
@@ -284,10 +310,28 @@ void TFTClass::drawBattery(
     }
 }
 
+void TFTClass::drawStatusBar(const char* communicationText)
+{
+    // Statusbalk wissen
+    tft.fillRect(
+        GuiLayout::toTftX(0),
+        GuiLayout::toTftY(GuiLayout::STATUS_Y),
+        270,
+        GuiLayout::STATUS_HEIGHT,
+        TFT_BLACK
+);
+
+    // Communicatie links
+    drawText(
+        GuiLayout::TEXT_MARGIN_LEFT,
+        GuiLayout::STATUS_Y + 5,
+        communicationText,
+        1
+    );
+}
+
 void TFTClass::setBacklight(uint8_t percent)
 {
-    if (percent < 10)
-        percent = 10;
 
     if (percent > 100)
         percent = 100;

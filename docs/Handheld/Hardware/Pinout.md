@@ -143,7 +143,8 @@ Effectieve matrix : 7 × 4 (28 toetsen)
 | TCA Pin | Functie          | Status |
 |---------|------------------|--------|
 | C4      | Reserve          | Vrij |
-| C5      | IP5306 KEY       | Definitief |
+| C5      | Reserve          | Vrij |
+| GPIO32  | IP5306 KEY       | Definitief |
 | C6      | Battery LED 25%  | Definitief |
 | C7      | Battery LED 50%  | Definitief |
 | C8      | Battery LED 75%  | Definitief |

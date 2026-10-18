@@ -55,7 +55,7 @@ namespace GuiLayout
 
     constexpr int16_t SOFTKEY_Y = 166;
 
-    constexpr int16_t SKL_X = 40;
+    constexpr int16_t SKL_X = 20;
     constexpr int16_t SKR_X = 280;
 
     // ============================================================

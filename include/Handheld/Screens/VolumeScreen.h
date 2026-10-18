@@ -15,6 +15,7 @@ public:
 
     void setBackCallback(BackCallback callback);
     void onKeyEvent(const TCA8418::KeyEvent& event);
+    uint8_t getVolume() const;
 
 private:
     BackCallback backCallback = nullptr;

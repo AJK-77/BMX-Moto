@@ -149,6 +149,15 @@ bool NodeConfig::isDisplay() const
     return hardwareType == HardwareType::Display;
 }
 
+bool NodeConfig::isMiniDisplay() const
+{
+    return hardwareType == HardwareType::MiniDisplay;
+}
+
+bool NodeConfig::isGanXinDisplay() const
+{
+    return hardwareType == HardwareType::GanXinDisplay;
+}
 
 void NodeConfig::determineHardwareType()
 {
@@ -160,9 +169,17 @@ void NodeConfig::determineHardwareType()
     {
         hardwareType = HardwareType::GateNode;
     }
-    else if (nodeAddress >= 21 && nodeAddress <= 30)
+    else if (nodeAddress == 21)
     {
         hardwareType = HardwareType::Display;
+    }
+    else if (nodeAddress == 22)
+    {
+        hardwareType = HardwareType::GanXinDisplay;
+    }
+    else if (nodeAddress == 23)
+    {
+        hardwareType = HardwareType::MiniDisplay;
     }
     else
     {

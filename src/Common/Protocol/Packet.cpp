@@ -151,6 +151,19 @@ bool Packet::addEvent(
     return addByte(static_cast<uint8_t>(eventType));
 }
 
+// ============================================================
+// Brightness
+// ============================================================
+
+bool Packet::addBrightness(uint8_t brightness)
+{
+    if (brightness > 100)
+    {
+        return false;
+    }
+
+    return addByte(brightness);
+}
 
 // ============================================================
 // CRC
@@ -288,6 +301,22 @@ EventType Packet::getEventType() const
     return static_cast<EventType>(data[4]);
 }
 
+// ============================================================
+// Brightness
+// ============================================================
+
+uint8_t Packet::getBrightness() const
+{
+    // Header    = 4 bytes
+    // Brightness = byte 4
+
+    if (length < 5)
+    {
+        return 0;
+    }
+
+    return data[4];
+}
 
 // ============================================================
 // Raw packet data

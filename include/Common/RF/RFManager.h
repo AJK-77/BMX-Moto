@@ -13,19 +13,23 @@ public:
     using ActivityCallback = void (*)(void);
     using StateChangeCallback = void (*)(void);
     using RFDataCallback = void (*)(const char* text, bool tx);
+    using HeartbeatReceivedCallback = void (*)(uint8_t sender);
 
     RFManager();
 
     bool begin();
     void update();
+    void shutdown();
 
     void send();
     void sendHeartbeat();
     void sendEvent(EventType eventType);
+    void sendBrightness(uint8_t brightness);
 
     void setActivityCallback(ActivityCallback callback);
     void setStateChangeCallback(StateChangeCallback callback);
     void setRFDataCallback(RFDataCallback callback);
+    void setHeartbeatReceivedCallback(HeartbeatReceivedCallback callback);
     void setRaceState(RaceState* state);
 
 private:
@@ -38,6 +42,7 @@ private:
     ActivityCallback activityCallback = nullptr;
     StateChangeCallback stateChangeCallback = nullptr;
     RFDataCallback rfDataCallback = nullptr;
+    HeartbeatReceivedCallback heartbeatReceivedCallback = nullptr;
 
     RaceState* raceState = nullptr;
 };

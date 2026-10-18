@@ -13,6 +13,8 @@ public:
 
     void onRFActivity();
     void onHeartbeat();
+    void onHeartbeatLost(uint8_t node);
+    void onHeartbeatRestored();
     void onHeartbeatReceived(uint16_t eventSequence);
     void onStateChanged();
 

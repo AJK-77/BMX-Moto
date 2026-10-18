@@ -27,15 +27,7 @@ void RFScreen::begin()
 void RFScreen::draw()
 {
     TFT.clear();
-
-    // Status
-    TFT.drawText(
-        2,
-        GuiLayout::STATUS_Y + 5,
-        "RF OK",
-        1
-    );
-
+    
     // Titel
     TFT.drawText(
         20,
@@ -79,9 +71,6 @@ void RFScreen::draw()
         "TERUG",
         2
     );
-
-    // Batterijsymbool
-    TFT.drawBattery(true, true, true, true);
 }
 
 void RFScreen::update()
