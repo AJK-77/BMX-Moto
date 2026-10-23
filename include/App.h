@@ -7,7 +7,9 @@
 
 #include "GateNode/GateNode.h"
 #include "Displays/485Display/485Display.h"
+#include "Displays/GanXinDisplay/GanXinDisplay.h"
 #include "Displays/MiniDisplay/MiniDisplay.h"
+
 
 #include "Handheld/GUI/TFT.h"
 #include "Handheld/Screens/MainScreen.h"
@@ -54,6 +56,7 @@ private:
     static void onRFBack();
     static void onMenuBack();
     static void onRFData(const char* text, bool tx);
+    static void onBrightnessReceived(uint8_t brightness);
 
     RaceState raceState;
 
@@ -63,6 +66,7 @@ private:
 
     GateNode gateNode;
     Display485 display485;
+    GanXinDisplay ganXinDisplay;
     MiniDisplay miniDisplay;
     
     TFTClass tft;

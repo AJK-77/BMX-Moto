@@ -170,6 +170,11 @@ void RFManager::setStateChangeCallback(StateChangeCallback callback)
     stateChangeCallback = callback;
 }
 
+void RFManager::setBrightnessCallback(BrightnessCallback callback)
+{
+    brightnessCallback = callback;
+}
+
 void RFManager::setRFDataCallback(RFDataCallback callback)
 {
     rfDataCallback = callback;
@@ -391,6 +396,11 @@ void RFManager::processPacket(Packet& packet)
             Serial.print("RF RX Brightness: ");
             Serial.print(brightness);
             Serial.println("%");
+
+            if (brightnessCallback != nullptr)
+            {
+                brightnessCallback(brightness);
+            } 
 
             break;
         }

@@ -8,6 +8,8 @@
 #include "Handheld/Input/TCA8418.h"
 #include "Handheld/Screens/PowerOffScreen.h"
 #include "Handheld/Audio.h"
+#include "Displays/GanXinDisplay/GanXinDisplay.h"
+#include "Displays/GanXinDisplay/Pins.h"
 
 
 App* App::instance = nullptr;
@@ -39,7 +41,7 @@ void App::begin()
     rf.setStateChangeCallback(onStateChanged);
     rf.setRFDataCallback(onRFData);
     rf.setHeartbeatReceivedCallback(onHeartbeatReceived);
-    
+    rf.setBrightnessCallback(onBrightnessReceived);
     
     rf.begin();
 
@@ -68,6 +70,12 @@ void App::begin()
     {
         display485.setRaceState(&raceState);
         display485.begin();
+    }
+
+    if (nodeConfig.isGanXinDisplay())
+    {
+        ganXinDisplay.setRaceState(&raceState);
+        ganXinDisplay.begin();
     }
 
     // ============================================================
@@ -182,9 +190,10 @@ void App::update()
         display485.update();
     }
 
-    // ============================================================
-    // Display
-    // ============================================================
+    if (nodeConfig.isGanXinDisplay())
+    {
+        ganXinDisplay.update();
+    }
 
     if (nodeConfig.isMiniDisplay())
     {
@@ -304,6 +313,11 @@ void App::onRFActivity()
     {
         instance->display485.onRFActivity();
     }
+
+        if (nodeConfig.isGanXinDisplay())
+    {
+        instance->ganXinDisplay.onRFActivity();
+    }
 }
 
 void App::onRFData(const char* text, bool tx)
@@ -347,6 +361,11 @@ void App::onHeartbeat()
     {
         instance->display485.onHeartbeat();
     }
+
+        if (nodeConfig.isGanXinDisplay())
+    {
+        instance->ganXinDisplay.onHeartbeat();
+    }
 }
 
 void App::onHeartbeatReceived(uint8_t sender)
@@ -378,6 +397,11 @@ void App::onHeartbeatLost(uint8_t node)
     if (nodeConfig.isDisplay())
     {
         instance->display485.onHeartbeatLost(node);
+    }
+
+        if (nodeConfig.isGanXinDisplay())
+    {
+        instance->ganXinDisplay.onHeartbeatLost(node);
     }
 
     if (nodeConfig.isMiniDisplay())
@@ -442,6 +466,11 @@ void App::onHeartbeatRestored(uint8_t node)
         instance->display485.onHeartbeatRestored();
     }
 
+        if (nodeConfig.isGanXinDisplay())
+    {
+        instance->ganXinDisplay.onHeartbeatRestored();
+    }
+
     if (nodeConfig.isMiniDisplay())
     {
         instance->miniDisplay.onHeartbeatRestored();
@@ -463,6 +492,19 @@ void App::onHeartbeatRestored(uint8_t node)
         {
             TFT.drawStatusBar(instance->communicationStatus);
         }
+    }
+}
+
+void App::onBrightnessReceived(uint8_t brightness)
+{
+    if (instance == nullptr)
+    {
+        return;
+    }
+
+    if (nodeConfig.isGanXinDisplay())
+    {
+        instance->ganXinDisplay.setBrightness(brightness);
     }
 }
 
@@ -505,6 +547,11 @@ void App::onStateChanged()
     if (nodeConfig.isDisplay())
     {
         instance->display485.onStateChanged();
+    }
+
+        if (nodeConfig.isGanXinDisplay())
+    {
+        instance->ganXinDisplay.onStateChanged();
     }
 
     if (nodeConfig.isMiniDisplay())
