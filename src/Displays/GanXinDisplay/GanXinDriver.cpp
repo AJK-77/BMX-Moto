@@ -79,7 +79,7 @@ bool GanXinDriver::setDigit(uint8_t digit, uint8_t value)
 {
     if (!initialized || digit >= DIGITS)
     {
-        return false;;
+        return false;
     }
 
     // Ondersteun cijfers, A, F en blank.

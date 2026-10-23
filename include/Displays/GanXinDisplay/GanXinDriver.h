@@ -20,7 +20,7 @@ public:
     bool setDigit(uint8_t digit, uint8_t value);
 
     // Alle vier cijfers in één keer instellen.
-    // Waarde 10 betekent een lege positie.
+    // Waarde 12 betekent een lege positie.
     bool setDigits(
         uint8_t digit0,
         uint8_t digit1,
@@ -28,7 +28,7 @@ public:
         uint8_t digit3
     );
 
-    // Helderheidsstap 1 t/m 9.
+    // Helderheidsstap 10 t/m 100%.
     // De uiteindelijke PWM-waarden worden gekalibreerd.
     void setBrightness(uint8_t percent);
 
