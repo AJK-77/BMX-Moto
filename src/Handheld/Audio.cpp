@@ -62,3 +62,36 @@ void AudioClass::click(uint8_t volume)
 
     dacWrite(AUDIO_OUT, 0);
 }
+
+void AudioClass::alarm(uint8_t volume)
+{
+    if (volume == 0)
+        return;
+
+    uint8_t high = map(volume, 1, 100, 180, 255);
+    uint8_t low  = map(volume, 1, 100, 75, 0);
+
+    for (int groep = 0; groep < 3; groep++)
+{
+    for (int toon = 0; toon < 3; toon++)
+    {
+        for (int i = 0; i < 120; i++)
+        {
+            dacWrite(AUDIO_OUT, high);
+            delayMicroseconds(250);
+
+            dacWrite(AUDIO_OUT, low);
+            delayMicroseconds(250);
+        }
+
+        dacWrite(AUDIO_OUT, 0);
+        delay(50);
+    }
+
+    if (groep < 2)
+    {
+        delay(250);
+    }
+}
+
+}

@@ -1,3 +1,4 @@
+
 #pragma once
 
 #include "Handheld/Input/TCA8418.h"
@@ -12,18 +13,17 @@ public:
     void update();
 
     void onKeyEvent(const TCA8418::KeyEvent& event);
+    void onPowerButton();
 
     void setBackCallback(void (*callback)());
     void setPowerDownCallback(void (*callback)());
 
-    private:
+private:
     void (*backCallback)() = nullptr;
     void (*powerDownCallback)() = nullptr;
 
-    bool countdownActive = false;
-    uint8_t countdownValue = 10;
-    unsigned long countdownStart = 0;
+    unsigned long firstPowerPress = 0;
+    bool waitingForSecondPress = false;
 
-    void startCountdown();
     void cancel();
 };

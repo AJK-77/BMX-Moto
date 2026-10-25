@@ -1,3 +1,4 @@
+
 #pragma once
 
 #include <stdint.h>
@@ -8,6 +9,7 @@ public:
     void begin();
     void click(uint8_t volume);
     void boot();
+    void alarm(uint8_t volume);
 };
 
 extern AudioClass Audio;

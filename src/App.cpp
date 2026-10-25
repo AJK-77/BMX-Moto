@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include <esp_sleep.h>
-
+#include <string.h>
 #include "App.h"
 #include "Common/NodeConfig.h"
 #include "Handheld/Pins.h"
@@ -150,19 +150,23 @@ void App::begin()
 void App::update()
 {
     if (nodeConfig.isHH() && powerDownMode)
+{
+    // Wacht tot de ON/OFF-knop is losgelaten.
+    while (digitalRead(POWER_WAKE_PIN) == LOW)
     {
-        if (digitalRead(POWER_WAKE_PIN) == LOW)
-        {
-            ESP.restart();
-        }
-
-        esp_sleep_enable_ext0_wakeup(
-            GPIO_NUM_35,
-            0
-        );
-
-        esp_deep_sleep_start();
+        delay(10);
     }
+
+    // Korte extra marge na het loslaten.
+    delay(300);
+
+    esp_sleep_enable_ext0_wakeup(
+        GPIO_NUM_35,
+        0
+    );
+
+    esp_deep_sleep_start();
+}
 
     // ============================================================
     // Common
@@ -214,6 +218,8 @@ void App::update()
             powerButtonHeld = true;
             powerButtonStart = millis();
             powerOffTriggered = false;
+
+            Audio.click(instance->volumeScreen.getVolume());
         }
         else if (!powerPressed && powerButtonHeld)
         {
@@ -224,7 +230,7 @@ void App::update()
 
         if (powerButtonHeld && !powerOffTriggered)
         {
-            if (millis() - powerButtonStart >= 1000)
+            if (millis() - powerButtonStart >= 1)
             {
                 powerOffTriggered = true;
                 activeScreen = Screen::POWEROFF;
@@ -234,6 +240,87 @@ void App::update()
 
         tca8418.update();
         
+
+        // Batterijalarm: 4 Hz = accu bijna leeg, 1 Hz = laden
+        if (nodeConfig.isHH())
+        {
+            static bool previousBattery25 = false;
+            static bool haveLastRise = false;
+            static bool lowBatteryAlarmActive = false;
+
+            static unsigned long lastRise = 0;
+            static unsigned long nextBatteryAlarm = 0;
+
+            static uint8_t fastCount = 0;
+            static uint8_t slowCount = 0;
+
+            const unsigned long now = millis();
+            const bool battery25 = tca8418.battery25();
+
+            // Detecteer de opgaande flank van de 25%-LED
+            if (battery25 && !previousBattery25)
+            {
+                if (haveLastRise)
+                {
+                    const unsigned long interval = now - lastRise;
+
+                    // 4 Hz: ongeveer 250 ms tussen pulsen
+                    if (interval >= 180 && interval <= 350)
+                    {
+                        slowCount = 0;
+
+                        if (fastCount < 2)
+                            fastCount++;
+
+                        // Twee opeenvolgende intervallen bevestigen 4 Hz
+                        if (fastCount >= 2 && !lowBatteryAlarmActive)
+                        {
+                            lowBatteryAlarmActive = true;
+
+                            Audio.alarm(instance->volumeScreen.getVolume());
+                            nextBatteryAlarm = millis() + 150000UL;
+                        }
+                    }
+                    // 1 Hz: ongeveer 1000 ms tussen pulsen
+                    else if (interval >= 750 && interval <= 1250)
+                    {
+                        fastCount = 0;
+
+                        if (slowCount < 2)
+                            slowCount++;
+
+                        // Twee opeenvolgende intervallen bevestigen 1 Hz
+                        if (slowCount >= 2)
+                        {
+                            lowBatteryAlarmActive = false;
+                            nextBatteryAlarm = 0;
+                        }
+                    }
+                    else
+                    {
+                        // Onbekend interval: begin opnieuw met herkennen
+                        fastCount = 0;
+                        slowCount = 0;
+                    }
+                }
+
+                lastRise = now;
+                haveLastRise = true;
+            }
+
+            previousBattery25 = battery25;
+
+            // Herhaal het alarm elke 2,5 minuut zolang 4 Hz actief is
+            if (lowBatteryAlarmActive &&
+                nextBatteryAlarm != 0 &&
+                (long)(now - nextBatteryAlarm) >= 0)
+            {
+                Audio.alarm(instance->volumeScreen.getVolume());
+                nextBatteryAlarm = millis() + 150000UL;
+            }
+        }
+
+
 
         if (splashActive)
         {
@@ -246,9 +333,9 @@ void App::update()
                 mainScreen.draw();
                 TFT.drawStatusBar("COMMUNICATIE OK");
             }
-        }
-        else
-        {
+            }
+            else
+            {
 
             TFT.drawBattery(
                 tca8418.battery25(),
@@ -411,6 +498,12 @@ void App::onHeartbeatLost(uint8_t node)
 
     if (nodeConfig.isHH())
     {
+        // Alleen alarm bij de eerste overgang van OK naar storing
+        if (strcmp(instance->communicationStatus, "COMMUNICATIE OK") == 0)
+        {
+            Audio.alarm(instance->volumeScreen.getVolume());
+        }
+
         char statusText[32];
 
         if (node >= 11 && node <= 20)
@@ -441,12 +534,23 @@ void App::onHeartbeatLost(uint8_t node)
             );
         }
 
+        // Bewaar de foutstatus, zodat volgende verloren nodes
+        // niet opnieuw het alarm activeren.
+        strncpy(
+            instance->communicationStatus,
+            statusText,
+            sizeof(instance->communicationStatus) - 1
+        );
+
+        instance->communicationStatus[
+            sizeof(instance->communicationStatus) - 1
+        ] = '\0';
+
         if (!instance->splashActive)
         {
             TFT.drawStatusBar(statusText);
         }
-    }   // ← deze sluit if (nodeConfig.isHH())
-
+    }
 }
 
 void App::onHeartbeatRestored(uint8_t node)

@@ -22,11 +22,25 @@ void FirmwareScreen::draw()
         2
     );
 
-    // Tijdelijke inhoud
+        // Firmware informatie
     TFT.drawText(
         20,
         70,
-        "FIRMWARE",
+        "Versie 1.0.0",
+        1
+    );
+
+    TFT.drawText(
+        20,
+        100,
+        "Gemaakt door A.J. Klarenbeek",
+        1
+    );
+
+    TFT.drawText(
+        20,
+        130,
+        "Contact: ajklarenbeek@gmail.com",
         1
     );
 

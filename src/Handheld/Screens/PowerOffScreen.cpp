@@ -1,8 +1,8 @@
+
 #include <Arduino.h>
 
 #include "Handheld/Screens/PowerOffScreen.h"
 #include "Handheld/GUI/TFT.h"
-#include "esp_sleep.h"
 
 PowerOffScreen::PowerOffScreen()
 {
@@ -10,98 +10,70 @@ PowerOffScreen::PowerOffScreen()
 
 void PowerOffScreen::begin()
 {
-    countdownActive = false;
-    countdownValue = 10;
+    waitingForSecondPress = false;
+    firstPowerPress = 0;
 }
+
 
 void PowerOffScreen::draw()
 {
     TFT.clear();
 
-    if (!countdownActive)
-    {
-        TFT.drawText(
-            20,
-            60,
-            "WEET JE HET ZEKER?",
-            2
-        );
+    TFT.drawText(
+        20,
+        35,
+        "WEET JE HET ZEKER?",
+        2
+    );
 
         TFT.drawText(
-            20,
-            120,
-            "ESC = NEE",
-            2
-        );
+        205,
+        85,
+        "2X OFF",
+        2
+    );
+
+    TFT.drawText(
+        25,
+        85,
+        "ESC IS",
+        2
+    );
+
+    TFT.drawText(
+        35,
+        115,
+        "VOOR",
+        2
+    );
+
+    TFT.drawText(
+        215,
+        115,
+        "VOOR",
+        2
+    );
 
         TFT.drawText(
-            190,
-            120,
-            "OK = JA",
-            2
-        );
-    }
-    else
-    {
-        char text[8];
+        1,
+        145,
+        "ANNULEREN",
+        2
+    );
 
-        snprintf(
-            text,
-            sizeof(text),
-            "%u",
-            countdownValue
-        );
 
-        TFT.drawText(
-            70,
-            30,
-            "UITSCHAKELEN",
-            2
-        );
-
-        TFT.drawText(
-            135,
-            70,
-            text,
-            6
-        );
-
-        TFT.drawText(
-            105,
-            170,
-            "ESC = ANNULEREN",
-            1
-        );
-    }
+    TFT.drawText(
+        180,
+        145,
+        "UITZETTEN",
+        2
+    );
 }
+
 
 void PowerOffScreen::update()
 {
-    if (!countdownActive)
-        return;
-
-    unsigned long now = millis();
-
-    if (now - countdownStart >= 1000)
-    {
-        countdownStart = now;
-
-        if (countdownValue > 0)
-        {
-            countdownValue--;
-            draw();
-        }
-
-        if (countdownValue == 0)
-        {
-            TFT.setBacklight(0);
-
-            if (powerDownCallback != nullptr)
-            {
-                powerDownCallback();
-            }
-        }
-    }
+    // Geen countdown nodig.
 }
 
 void PowerOffScreen::onKeyEvent(const TCA8418::KeyEvent& event)
@@ -109,39 +81,44 @@ void PowerOffScreen::onKeyEvent(const TCA8418::KeyEvent& event)
     if (event.type != TCA8418::EventType::DOWN)
         return;
 
-    if (!countdownActive)
+    if (event.key == TCA8418::Key::ESC)
     {
-        if (event.key == TCA8418::Key::ESC)
+        cancel();
+    }
+}
+
+void PowerOffScreen::onPowerButton()
+{
+    unsigned long now = millis();
+
+    if (!waitingForSecondPress)
+    {
+        firstPowerPress = now;
+        waitingForSecondPress = true;
+        return;
+    }
+
+    if (now - firstPowerPress <= 1000)
+    {
+        waitingForSecondPress = false;
+
+        if (powerDownCallback != nullptr)
         {
-            cancel();
-        }
-        else if (event.key == TCA8418::Key::OK)
-        {
-            startCountdown();
+            powerDownCallback();
         }
     }
     else
     {
-        if (event.key == TCA8418::Key::ESC)
-        {
-            cancel();
-        }
+        // De vorige druk is verlopen.
+        // Deze druk wordt de eerste druk van een nieuwe dubbelklik.
+        firstPowerPress = now;
     }
-}
-
-void PowerOffScreen::startCountdown()
-{
-    countdownActive = true;
-    countdownValue = 10;
-    countdownStart = millis();
-
-    draw();
 }
 
 void PowerOffScreen::cancel()
 {
-    countdownActive = false;
-    countdownValue = 10;
+    waitingForSecondPress = false;
+    firstPowerPress = 0;
 
     if (backCallback != nullptr)
         backCallback();
